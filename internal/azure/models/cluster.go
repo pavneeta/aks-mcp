@@ -10,5 +10,5 @@ type AKSClusterSummary struct {
 	ResourceGroup     string `json:"resourceGroup"`
 	KubernetesVersion string `json:"kubernetesVersion,omitempty"`
 	ProvisioningState string `json:"provisioningState,omitempty"`
-	NodeCount         int    `json:"nodeCount"`
+	AgentPoolCount    int    `json:"agentPoolCount"`
 }

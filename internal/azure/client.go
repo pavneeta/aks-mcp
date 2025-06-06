@@ -241,23 +241,19 @@ func (c *AzureClient) ListAKSClusters(ctx context.Context, subscriptionID, resou
 				}
 			}
 
-			// Count nodes across all agent pools
-			nodeCount := 0
+			// Count the number of agent pools instead of nodes
+			agentPoolCount := 0
 			if cluster.Properties != nil && cluster.Properties.AgentPoolProfiles != nil {
-				for _, pool := range cluster.Properties.AgentPoolProfiles {
-					if pool.Count != nil {
-						nodeCount += int(*pool.Count)
-					}
-				}
+				agentPoolCount = len(cluster.Properties.AgentPoolProfiles)
 			}
 
 			// Create summary with essential information
 			summary := models.AKSClusterSummary{
-				ID:            toString(cluster.ID),
-				Name:          toString(cluster.Name),
-				Location:      toString(cluster.Location),
-				ResourceGroup: parsedRG,
-				NodeCount:     nodeCount,
+				ID:             toString(cluster.ID),
+				Name:           toString(cluster.Name),
+				Location:       toString(cluster.Location),
+				ResourceGroup:  parsedRG,
+				AgentPoolCount: agentPoolCount,
 			}
 
 			// Add optional properties if available
@@ -303,23 +299,19 @@ func (c *AzureClient) ListAllAKSClusters(ctx context.Context, subscriptionID str
 				}
 			}
 
-			// Count nodes across all agent pools
-			nodeCount := 0
+			// Count the number of agent pools instead of nodes
+			agentPoolCount := 0
 			if cluster.Properties != nil && cluster.Properties.AgentPoolProfiles != nil {
-				for _, pool := range cluster.Properties.AgentPoolProfiles {
-					if pool.Count != nil {
-						nodeCount += int(*pool.Count)
-					}
-				}
+				agentPoolCount = len(cluster.Properties.AgentPoolProfiles)
 			}
 
 			// Create summary with essential information
 			summary := models.AKSClusterSummary{
-				ID:            toString(cluster.ID),
-				Name:          toString(cluster.Name),
-				Location:      toString(cluster.Location),
-				ResourceGroup: resourceGroup,
-				NodeCount:     nodeCount,
+				ID:             toString(cluster.ID),
+				Name:           toString(cluster.Name),
+				Location:       toString(cluster.Location),
+				ResourceGroup:  resourceGroup,
+				AgentPoolCount: agentPoolCount,
 			}
 
 			// Add optional properties if available
