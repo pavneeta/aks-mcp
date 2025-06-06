@@ -9,6 +9,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
+
+	"github.com/azure/aks-mcp/internal/azure/models"
 )
 
 // SubscriptionClients contains Azure clients for a specific subscription.
@@ -210,13 +212,13 @@ func (c *AzureClient) GetResourceByID(ctx context.Context, resourceID string) (i
 }
 
 // ListAKSClusters lists all AKS clusters in a specific resource group.
-func (c *AzureClient) ListAKSClusters(ctx context.Context, subscriptionID, resourceGroup string) ([]*armcontainerservice.ManagedCluster, error) {
+func (c *AzureClient) ListAKSClusters(ctx context.Context, subscriptionID, resourceGroup string) ([]models.AKSClusterSummary, error) {
 	clients, err := c.getOrCreateClientsForSubscription(subscriptionID)
 	if err != nil {
 		return nil, err
 	}
 
-	var clusters []*armcontainerservice.ManagedCluster
+	var clusterSummaries []models.AKSClusterSummary
 	pager := clients.ContainerServiceClient.NewListByResourceGroupPager(resourceGroup, nil)
 
 	for pager.More() {
@@ -226,23 +228,55 @@ func (c *AzureClient) ListAKSClusters(ctx context.Context, subscriptionID, resou
 		}
 
 		for _, cluster := range page.Value {
-			if cluster != nil {
-				clusters = append(clusters, cluster)
+			if cluster == nil {
+				continue
 			}
+
+			// Extract resource group from the ID
+			parsedRG := resourceGroup
+			if cluster.ID != nil {
+				parsed, err := ParseResourceID(*cluster.ID)
+				if err == nil {
+					parsedRG = parsed.ResourceGroup
+				}
+			}
+
+			// Count the number of agent pools instead of nodes
+			agentPoolCount := 0
+			if cluster.Properties != nil && cluster.Properties.AgentPoolProfiles != nil {
+				agentPoolCount = len(cluster.Properties.AgentPoolProfiles)
+			}
+
+			// Create summary with essential information
+			summary := models.AKSClusterSummary{
+				ID:             toString(cluster.ID),
+				Name:           toString(cluster.Name),
+				Location:       toString(cluster.Location),
+				ResourceGroup:  parsedRG,
+				AgentPoolCount: agentPoolCount,
+			}
+
+			// Add optional properties if available
+			if cluster.Properties != nil {
+				summary.KubernetesVersion = toString(cluster.Properties.KubernetesVersion)
+				summary.ProvisioningState = toString(cluster.Properties.ProvisioningState)
+			}
+
+			clusterSummaries = append(clusterSummaries, summary)
 		}
 	}
 
-	return clusters, nil
+	return clusterSummaries, nil
 }
 
-// ListAllAKSClusters lists all AKS clusters across a subscription.
-func (c *AzureClient) ListAllAKSClusters(ctx context.Context, subscriptionID string) ([]*armcontainerservice.ManagedCluster, error) {
+// ListAllAKSClusters lists all AKS clusters across a subscription with minimal information.
+func (c *AzureClient) ListAllAKSClusters(ctx context.Context, subscriptionID string) ([]models.AKSClusterSummary, error) {
 	clients, err := c.getOrCreateClientsForSubscription(subscriptionID)
 	if err != nil {
 		return nil, err
 	}
 
-	var clusters []*armcontainerservice.ManagedCluster
+	var clusterSummaries []models.AKSClusterSummary
 	pager := clients.ContainerServiceClient.NewListPager(nil)
 
 	for pager.More() {
@@ -252,11 +286,43 @@ func (c *AzureClient) ListAllAKSClusters(ctx context.Context, subscriptionID str
 		}
 
 		for _, cluster := range page.Value {
-			if cluster != nil {
-				clusters = append(clusters, cluster)
+			if cluster == nil {
+				continue
 			}
+
+			// Extract resource group from the ID
+			resourceGroup := ""
+			if cluster.ID != nil {
+				parsed, err := ParseResourceID(*cluster.ID)
+				if err == nil {
+					resourceGroup = parsed.ResourceGroup
+				}
+			}
+
+			// Count the number of agent pools instead of nodes
+			agentPoolCount := 0
+			if cluster.Properties != nil && cluster.Properties.AgentPoolProfiles != nil {
+				agentPoolCount = len(cluster.Properties.AgentPoolProfiles)
+			}
+
+			// Create summary with essential information
+			summary := models.AKSClusterSummary{
+				ID:             toString(cluster.ID),
+				Name:           toString(cluster.Name),
+				Location:       toString(cluster.Location),
+				ResourceGroup:  resourceGroup,
+				AgentPoolCount: agentPoolCount,
+			}
+
+			// Add optional properties if available
+			if cluster.Properties != nil {
+				summary.KubernetesVersion = toString(cluster.Properties.KubernetesVersion)
+				summary.ProvisioningState = toString(cluster.Properties.ProvisioningState)
+			}
+
+			clusterSummaries = append(clusterSummaries, summary)
 		}
 	}
 
-	return clusters, nil
+	return clusterSummaries, nil
 }
