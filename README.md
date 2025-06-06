@@ -1,14 +1,127 @@
-# Project
+# AKS-MCP
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+The AKS-MCP is a Model Context Protocol (MCP) server that enables AI assistants to interact with Azure Kubernetes Service (AKS) clusters. It serves as a bridge between AI tools (like GitHub Copilot, Claude, and other MCP-compatible AI assistants) and AKS, translating natural language requests into AKS operations and returning the results in a format the AI tools can understand.
 
-As the maintainer of this project, please make a few updates:
+It allows AI tools to:
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+- Operate (CURD) AKS resources
+- Retrieve details related to AKS clusters (VNets, Subnets, NSGs, Route Tables, etc.)
+
+## How it works
+
+AKS-MCP connects to Azure using the Azure SDK and provides a set of tools that AI assistants can use to interact with AKS resources. It leverages the Model Context Protocol (MCP) to facilitate this communication, enabling AI tools to make API calls to Azure and interpret the responses.
+
+## How to install
+
+### Local
+
+<details>
+<summary>Install prerequisites</summary>
+
+1. Set up [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and authenticate
+```bash
+az login
+```
+</details>
+
+<br/>
+
+Configure your MCP servers in supported AI clients like [GitHub Copilot](https://github.com/features/copilot), [Claude](https://claude.ai/), or other MCP-compatible clients:
+
+```json
+{
+  "mcpServers": {
+    "aks": {
+      "command": "<path of binary aks-mcp>",
+      "args": [
+        "--transport", "stdio"
+      ]
+    }
+  }
+}
+```
+
+You can also specify a specific AKS cluster to work with:
+
+```json
+{
+  "mcpServers": {
+    "aks": {
+      "command": "<path of binary aks-mcp>",
+      "args": [
+        "--transport", "stdio",
+        "--resource-id", "/subscriptions/your-subscription-id/resourceGroups/your-resource-group/providers/Microsoft.ContainerService/managedClusters/your-cluster-name"
+      ]
+    }
+  }
+}
+```
+
+### GitHub Copilot Configuration in vscode
+
+For GitHub Copilot in vscode, configure the MCP server in your `.vscode/mcp.json` file:
+
+```json
+{
+  "servers": {
+    "aks-mcp-server": {
+      "type": "stdio",
+      "command": "<path of binary aks-mcp>",
+      "args": [
+        "--aks-resource-id",
+        "/subscriptions/your-subscription-id/resourceGroups/your-resource-group/providers/Microsoft.ContainerService/managedClusters/your-cluster-name"
+      ]
+    }
+  }
+}
+```
+
+### Options
+
+Command line arguments:
+
+```sh
+Usage of ./aks-mcp:
+      --access-level string      Access level for tools (read, readwrite, admin) (default "read")
+      --address string           Address to listen on when using SSE transport (default "localhost:8080")
+      --aks-resource-id string   AKS Resource ID (optional), set this when using single cluster mode
+  -t, --transport string         Transport type (stdio or sse) (default "stdio")
+```
+
+Environment variables:
+- Standard Azure authentication environment variables are supported (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_SUBSCRIPTION_ID)
+
+## Usage
+
+Ask any questions about your AKS clusters in your AI client, for example:
+
+```
+List all my AKS clusters in my subscription xxx.
+
+What is the network configuration of my AKS cluster?
+
+Show me the network security groups associated with my cluster.
+```
+
+## Available Tools
+
+The aks-mcp server provides the following tools for interacting with AKS clusters:
+
+<details>
+<summary>Cluster Tools</summary>
+
+- `get_cluster_info`: Get detailed information about an AKS cluster
+- `list_aks_clusters`: List all AKS clusters in a subscription and optional resource group
+</details>
+
+<details>
+<summary>Network Tools</summary>
+
+- `get_vnet_info`: Get information about the VNet used by the AKS cluster
+- `get_subnet_info`: Get information about the subnets used by the AKS cluster
+- `get_route_table_info`: Get information about the route tables used by the AKS cluster
+- `get_nsg_info`: Get information about the network security groups used by the AKS cluster
+</details>
 
 ## Contributing
 
