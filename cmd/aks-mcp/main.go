@@ -54,9 +54,15 @@ func main() {
 		if err := sseServer.Start(cfg.Address); err != nil {
 			log.Fatalf("Server error: %v", err)
 		}
+	case "streamable-http":
+		log.Printf("Starting AKS MCP server with Streamable HTTP transport on %s", cfg.Address)
+		streamableServer := s.ServeStreamableHTTP()
+		if err := streamableServer.Start(cfg.Address); err != nil {
+			log.Fatalf("Server error: %v", err)
+		}
 	default:
 		log.Fatalf(
-			"Invalid transport type: %s. Must be 'stdio' or 'sse'",
+			"Invalid transport type: %s. Must be 'stdio', 'sse' or 'streamable-http'",
 			cfg.Transport,
 		)
 	}

@@ -40,6 +40,11 @@ func (s *AKSMCPServer) ServeSSE(addr string) *server.SSEServer {
 	)
 }
 
+// ServeStreamableHTTP serves the MCP server over streamable HTTP.
+func (s *AKSMCPServer) ServeStreamableHTTP() *server.StreamableHTTPServer {
+	return server.NewStreamableHTTPServer(s.server)
+}
+
 // ServeStdio serves the MCP server over stdio.
 func (s *AKSMCPServer) ServeStdio() error {
 	return server.ServeStdio(s.server)
