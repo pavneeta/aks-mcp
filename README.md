@@ -82,10 +82,10 @@ Command line arguments:
 
 ```sh
 Usage of ./aks-mcp:
-      --access-level string      Access level for tools (read, readwrite, admin) (default "read")
-      --address string           Address to listen on when using SSE transport (default "localhost:8080")
-      --aks-resource-id string   AKS Resource ID (optional), set this when using single cluster mode
-  -t, --transport string         Transport type (stdio or sse) (default "stdio")
+  --access-level string      Access level for tools (read, readwrite, admin) (default "read")
+  --address string           Address to listen on when using transport SSE or streamable-http (default "localhost:8080")
+  --aks-resource-id string   AKS Resource ID (optional), set this when using single cluster mode
+  -t, --transport string         Transport type (stdio, sse or streamable-http) (default "stdio")
 ```
 
 Environment variables:
@@ -139,8 +139,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.

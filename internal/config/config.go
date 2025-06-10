@@ -34,10 +34,10 @@ func NewConfig() *Config {
 func ParseFlags() *Config {
 	config := NewConfig()
 
-	flag.StringVarP(&config.Transport, "transport", "t", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&config.ResourceIDString, "aks-resource-id", "", "AKS Resource ID (optional), set this when using single cluster mode")
-	flag.StringVar(&config.Address, "address", "localhost:8080", "Address to listen on when using SSE transport")
-	flag.StringVar(&config.AccessLevel, "access-level", "read", "Access level for tools (read, readwrite, admin)")
+	flag.StringVarP(&config.Transport, "transport", "t", "stdio", "Transport type (stdio, sse or streamable-http)")
+	flag.StringVarP(&config.ResourceIDString, "aks-resource-id", "a", "", "AKS Resource ID (optional), set this when using single cluster mode")
+	flag.StringVarP(&config.Address, "address", "l", "localhost:8080", "Address to listen on when using transport SSE or streamable-http")
+	flag.StringVarP(&config.AccessLevel, "access-level", "x", "read", "Access level for tools (read, readwrite, admin)")
 	flag.Parse()
 
 	// Set SingleClusterMode based on whether ResourceIDString is provided
@@ -61,12 +61,13 @@ func (c *Config) Validate() error {
 
 	// Validate Transport
 	validTransports := map[string]bool{
-		"stdio": true,
-		"sse":   true,
+		"stdio":           true,
+		"sse":             true,
+		"streamable-http": true,
 	}
 
 	if !validTransports[c.Transport] {
-		return fmt.Errorf("invalid transport: %s, must be either stdio or sse", c.Transport)
+		return fmt.Errorf("invalid transport: %s, must be stdio, sse or streamable-http", c.Transport)
 	}
 
 	// Validate Address if using SSE transport
