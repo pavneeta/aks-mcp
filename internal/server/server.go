@@ -26,6 +26,8 @@ func NewService(cfg *config.ConfigData) *Service {
 
 // Initialize initializes the service
 func (s *Service) Initialize() error {
+	// Initialize configuration
+
 	// Create MCP server
 	s.mcpServer = server.NewMCPServer(
 		"AKS MCP",
@@ -47,6 +49,8 @@ func (s *Service) Initialize() error {
 
 // Run starts the service with the specified transport
 func (s *Service) Run() error {
+	log.Println("MCP Kubernetes version:", version.GetVersion())
+
 	// Start the server
 	switch s.cfg.Transport {
 	case "stdio":
@@ -54,14 +58,17 @@ func (s *Service) Run() error {
 		log.Println("Listening for requests on STDIO...")
 		return server.ServeStdio(s.mcpServer)
 	case "sse":
-		url := fmt.Sprintf("http://localhost:%d", s.cfg.Port)
-		sse := server.NewSSEServer(s.mcpServer, server.WithBaseURL(url))
-
-		log.Println("MCP Kubernetes version:", version.GetVersion())
-		log.Printf("SSE server listening on %s", url)
-		return sse.Start(fmt.Sprintf(":%d", s.cfg.Port))
+		sse := server.NewSSEServer(s.mcpServer)
+		addr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.Port)
+		log.Printf("SSE server listening on %s", addr)
+		return sse.Start(addr)
+	case "streamable-http":
+		streamableServer := server.NewStreamableHTTPServer(s.mcpServer)
+		addr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.Port)
+		log.Printf("Streamable HTTP server listening on %s", addr)
+		return streamableServer.Start(addr)
 	default:
-		return fmt.Errorf("invalid transport type: %s (must be 'stdio' or 'sse')", s.cfg.Transport)
+		return fmt.Errorf("invalid transport type: %s (must be 'stdio', 'sse' or 'streamable-http')", s.cfg.Transport)
 	}
 }
 
