@@ -56,12 +56,12 @@ func GetReadOnlyAzCommands() []AksCommand {
 // GetReadWriteAzCommands returns all read-write az commands
 func GetReadWriteAzCommands() []AksCommand {
 	return []AksCommand{
-		{Name: "az aks create", Description: "Create a new managed Kubernetes cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --node-count 1 --enable-addons monitoring --generate-ssh-keys"},
+		{Name: "az aks create", Description: "Create a new managed Kubernetes cluster, use --help if you are not clear about the arguments.", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --node-count 1 --enable-addons monitoring --generate-ssh-keys"},
 		{Name: "az aks delete", Description: "Delete a managed Kubernetes cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --yes"},
 		{Name: "az aks scale", Description: "Scale the node pool in a managed Kubernetes cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --node-count 3"},
-		{Name: "az aks update", Description: "Update a managed Kubernetes cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --enable-cluster-autoscaler --min-count 1 --max-count 3"},
+		{Name: "az aks update", Description: "Update a managed Kubernetes cluster, use --help if you are not clear about the arguments.", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --enable-cluster-autoscaler --min-count 1 --max-count 3"},
 		{Name: "az aks upgrade", Description: "Upgrade a managed Kubernetes cluster to a newer version", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --kubernetes-version 1.28.0"},
-		{Name: "az aks nodepool add", Description: "Add a node pool to the managed Kubernetes cluster", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup --name nodepool2 --node-count 3"},
+		{Name: "az aks nodepool add", Description: "Add a node pool to the managed Kubernetes cluster, use --help if you are not clear about the arguments.", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup --name nodepool2 --node-count 3"},
 		{Name: "az aks nodepool delete", Description: "Delete a node pool from the managed Kubernetes cluster", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup --name nodepool2"},
 		{Name: "az aks nodepool scale", Description: "Scale a node pool in a managed Kubernetes cluster", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup --name nodepool1 --node-count 3"},
 		{Name: "az aks nodepool upgrade", Description: "Upgrade a node pool to a newer version", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup --name nodepool1 --kubernetes-version 1.28.0"},
