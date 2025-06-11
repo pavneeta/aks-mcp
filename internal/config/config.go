@@ -26,7 +26,7 @@ func NewConfig() *ConfigData {
 		SecurityConfig: security.NewSecurityConfig(),
 		Transport:      "stdio",
 		Port:           8000,
-		AccessLevel:    "readwrite",
+		AccessLevel:    "readonly",
 	}
 }
 
@@ -38,7 +38,7 @@ func (cfg *ConfigData) ParseFlags() {
 	flag.IntVar(&cfg.Port, "port", 8000, "Port to listen for the server (only used with transport sse or streamable-http)")
 	flag.IntVar(&cfg.Timeout, "timeout", 600, "Timeout for command execution in seconds, default is 600s")
 	// Security settings
-	flag.StringVar(&cfg.AccessLevel, "access-level", "readwrite", "Access level (readonly, readwrite, admin)")
+	flag.StringVar(&cfg.AccessLevel, "access-level", "readonly", "Access level (readonly, readwrite, admin)")
 
 	flag.Parse()
 
