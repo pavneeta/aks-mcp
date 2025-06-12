@@ -1,6 +1,8 @@
 package az
 
 import (
+	"strings"
+
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -9,6 +11,12 @@ type AksCommand struct {
 	Name        string
 	Description string
 	ArgsExample string // Example of command arguments
+}
+
+// replaceSpacesWithUnderscores converts spaces to underscores
+// to create a valid tool name that follows the [a-z0-9_-] pattern
+func replaceSpacesWithUnderscores(s string) string {
+	return strings.ReplaceAll(s, " ", "_")
 }
 
 // // RegisterAz registers the generic az tool
@@ -24,7 +32,10 @@ type AksCommand struct {
 
 // RegisterAzCommand registers a specific az command as an MCP tool
 func RegisterAzCommand(cmd AksCommand) mcp.Tool {
+	// Convert spaces to underscores for valid tool name
 	commandName := cmd.Name
+	validToolName := replaceSpacesWithUnderscores(commandName)
+
 	description := "Run " + cmd.Name + " command: " + cmd.Description + "."
 
 	// Add example if available, with proper punctuation
@@ -32,7 +43,7 @@ func RegisterAzCommand(cmd AksCommand) mcp.Tool {
 		description += "\nExample: `" + cmd.ArgsExample + "`"
 	}
 
-	return mcp.NewTool(commandName,
+	return mcp.NewTool(validToolName,
 		mcp.WithDescription(description),
 		mcp.WithString("args",
 			mcp.Required(),
