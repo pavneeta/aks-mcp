@@ -76,6 +76,7 @@ func (s *Service) Run() error {
 func (s *Service) registerAzCommands() {
 	// Register read-only az commands (available at all access levels)
 	for _, cmd := range az.GetReadOnlyAzCommands() {
+		log.Println("Registering az command:", cmd.Name)
 		azTool := az.RegisterAzCommand(cmd)
 		commandExecutor := az.CreateCommandExecutorFunc(cmd.Name)
 		s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
@@ -85,6 +86,7 @@ func (s *Service) registerAzCommands() {
 	if s.cfg.AccessLevel == "readwrite" || s.cfg.AccessLevel == "admin" {
 		// Register read-write az commands
 		for _, cmd := range az.GetReadWriteAzCommands() {
+			log.Println("Registering az command:", cmd.Name)
 			azTool := az.RegisterAzCommand(cmd)
 			commandExecutor := az.CreateCommandExecutorFunc(cmd.Name)
 			s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
@@ -95,6 +97,7 @@ func (s *Service) registerAzCommands() {
 	if s.cfg.AccessLevel == "admin" {
 		// Register admin az commands
 		for _, cmd := range az.GetAdminAzCommands() {
+			log.Println("Registering az command:", cmd.Name)
 			azTool := az.RegisterAzCommand(cmd)
 			commandExecutor := az.CreateCommandExecutorFunc(cmd.Name)
 			s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
