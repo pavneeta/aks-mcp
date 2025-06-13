@@ -5,6 +5,8 @@ import (
 	"log"
 
 	"github.com/Azure/aks-mcp/internal/az"
+	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/aks-mcp/internal/azure/resourcehandlers"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
 	"github.com/Azure/aks-mcp/internal/version"
@@ -43,6 +45,9 @@ func (s *Service) Initialize() error {
 
 	// Register individual az commands
 	s.registerAzCommands()
+
+	// Register Azure resource tools (VNet, NSG, etc.)
+	s.registerAzureResourceTools()
 
 	return nil
 }
@@ -111,4 +116,30 @@ func (s *Service) registerAzCommands() {
 			s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 		}
 	}
+}
+
+func (s *Service) registerAzureResourceTools() {
+	// Create Azure client and cache for the resource tools
+	azClient, err := azure.NewAzureClient()
+	if err != nil {
+		log.Printf("Warning: Failed to create Azure client: %v", err)
+		return
+	}
+	azCache := azure.NewAzureCache()
+
+	// Register VNet info tool
+	vnetTool := resourcehandlers.RegisterVNetInfoTool()
+	s.mcpServer.AddTool(vnetTool, tools.CreateToolHandler(resourcehandlers.GetVNetInfoHandler(azClient, azCache, s.cfg), s.cfg))
+
+	// Register NSG info tool
+	nsgTool := resourcehandlers.RegisterNSGInfoTool()
+	s.mcpServer.AddTool(nsgTool, tools.CreateToolHandler(resourcehandlers.GetNSGInfoHandler(azClient, azCache, s.cfg), s.cfg))
+
+	// Register RouteTable info tool
+	routeTableTool := resourcehandlers.RegisterRouteTableInfoTool()
+	s.mcpServer.AddTool(routeTableTool, tools.CreateToolHandler(resourcehandlers.GetRouteTableInfoHandler(azClient, azCache, s.cfg), s.cfg))
+
+	// Register Subnet info tool
+	subnetTool := resourcehandlers.RegisterSubnetInfoTool()
+	s.mcpServer.AddTool(subnetTool, tools.CreateToolHandler(resourcehandlers.GetSubnetInfoHandler(azClient, azCache, s.cfg), s.cfg))
 }
