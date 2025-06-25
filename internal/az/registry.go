@@ -146,6 +146,15 @@ func GetReadWriteAzCommands() []AksCommand {
 	}
 }
 
+// GetAccountAzCommands returns all Azure account management commands
+func GetAccountAzCommands() []AksCommand {
+	return []AksCommand{
+		{Name: "az account list", Description: "List all subscriptions for the authenticated account", ArgsExample: "--output table"},
+		{Name: "az login", Description: "Log in to Azure", ArgsExample: "--use-device-code"},
+		{Name: "az account set", Description: "Set a subscription as the current active subscription", ArgsExample: "--subscription mySubscriptionNameOrId"},
+	}
+}
+
 // GetAdminAzCommands returns all admin az commands
 func GetAdminAzCommands() []AksCommand {
 	return []AksCommand{

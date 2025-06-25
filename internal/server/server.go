@@ -82,6 +82,14 @@ func (s *Service) registerAzCommands() {
 		s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 	}
 
+	// Register account management commands (available at all access levels)
+	for _, cmd := range az.GetAccountAzCommands() {
+		log.Println("Registering az command:", cmd.Name)
+		azTool := az.RegisterAzCommand(cmd)
+		commandExecutor := az.CreateCommandExecutorFunc(cmd.Name)
+		s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
+	}
+
 	// Register read-write commands if access level is readwrite or admin
 	if s.cfg.AccessLevel == "readwrite" || s.cfg.AccessLevel == "admin" {
 		// Register read-write az commands

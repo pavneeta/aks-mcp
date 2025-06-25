@@ -42,9 +42,14 @@ var (
 		// Other read operations
 		"az aks install-cli",
 		// "az aks get-credentials", // Commented out as it may require special handling
-		"az account",
+
+		// Account management commands
+		"az account list",
+		"az account set",
+		"az login",
+
+		// Other general commands
 		"az find",
-		// "login",
 		"az version",
 		"az help",
 		"az config",
