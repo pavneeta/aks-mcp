@@ -4,7 +4,7 @@ The AKS-MCP is a Model Context Protocol (MCP) server that enables AI assistants 
 
 It allows AI tools to:
 
-- Operate (CURD) AKS resources
+- Operate (CRUD) AKS resources
 - Retrieve details related to AKS clusters (VNets, Subnets, NSGs, Route Tables, etc.)
 
 ## How it works
@@ -57,9 +57,9 @@ You can also specify a specific AKS cluster to work with:
 }
 ```
 
-### GitHub Copilot Configuration in vscode
+### GitHub Copilot Configuration in VS Code
 
-For GitHub Copilot in vscode, configure the MCP server in your `.vscode/mcp.json` file:
+For GitHub Copilot in VS Code, configure the MCP server in your `.vscode/mcp.json` file:
 
 ```json
 {
@@ -85,11 +85,11 @@ Usage of ./aks-mcp:
   --access-level string      Access level for tools (read, readwrite, admin) (default "read")
   --address string           Address to listen on when using transport SSE or streamable-http (default "localhost:8080")
   --aks-resource-id string   AKS Resource ID (optional), set this when using single cluster mode
-  -t, --transport string         Transport type (stdio, sse or streamable-http) (default "stdio")
+  -t, --transport string     Transport type (stdio, sse or streamable-http) (default "stdio")
 ```
 
-Environment variables:
-- Standard Azure authentication environment variables are supported (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_SUBSCRIPTION_ID)
+**Environment variables:**
+- Standard Azure authentication environment variables are supported (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`)
 
 ## Usage
 
@@ -105,7 +105,7 @@ Show me the network security groups associated with my cluster.
 
 ## Available Tools
 
-The aks-mcp server provides the following tools for interacting with AKS clusters:
+The AKS-MCP server provides the following tools for interacting with AKS clusters:
 
 <details>
 <summary>Cluster Tools</summary>
