@@ -155,7 +155,7 @@ func GetReadWriteAzCommands() []AksCommand {
 func GetAccountAzCommands() []AksCommand {
 	return []AksCommand{
 		{Name: "az account list", Description: "List all subscriptions for the authenticated account", ArgsExample: "--output table"},
-		{Name: "az login", Description: "Log in to Azure", ArgsExample: "--use-device-code"},
+		{Name: "az login", Description: "Log in to Azure using service principal credentials", ArgsExample: "--service-principal --username APP_ID --password PASSWORD --tenant TENANT_ID"},
 		{Name: "az account set", Description: "Set a subscription as the current active subscription", ArgsExample: "--subscription mySubscriptionNameOrId"},
 	}
 }
