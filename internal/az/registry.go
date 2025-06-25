@@ -61,6 +61,7 @@ func GetReadOnlyAzCommands() []AksCommand {
 		{Name: "az aks get-versions", Description: "Get the versions available for creating a managed Kubernetes cluster", ArgsExample: "--location eastus"},
 		{Name: "az aks get-upgrades", Description: "Get the upgrade versions available for a managed Kubernetes cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup"},
 		{Name: "az aks check-acr", Description: "Validate an ACR is accessible from an AKS cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --acr myAcrName"},
+		{Name: "az aks check-network outbound", Description: "Perform outbound network connectivity check for a node in a managed Kubernetes cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup"},
 
 		// Addon information commands
 		{Name: "az aks addon list", Description: "List addons and their conditions in a managed Kubernetes cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup"},

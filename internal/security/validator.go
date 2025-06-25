@@ -18,6 +18,7 @@ var (
 		"az aks get-versions",
 		"az aks get-upgrades",
 		"az aks check-acr",
+		"az aks check-network outbound",
 		"az aks browse",
 
 		// Addon commands
