@@ -131,28 +131,45 @@ func (v *Validator) validateAccessLevel(command string, readOperations []string)
 
 // isReadOperation checks if a command is a read operation
 func (v *Validator) isReadOperation(command string, allowedOperations []string) bool {
+	// Check if the command contains help flags - these are always read-only
+	if strings.Contains(command, "--help") || strings.Contains(command, " -h ") || strings.HasSuffix(command, " -h") {
+		return true
+	}
+
 	// Normalize command by removing any options/arguments
 	// This extracts the base command like "az aks show" from "az aks show --name myCluster"
 	cmdParts := strings.Fields(command)
-	var baseCommand string
-
-	if len(cmdParts) >= 3 && cmdParts[0] == CommandTypeAz {
-		// Take the first three parts (e.g., "az aks show")
-		baseCommand = strings.Join(cmdParts[:3], " ")
-	} else if len(cmdParts) == 2 && cmdParts[0] == CommandTypeAz {
-		// Handle commands with just two parts (e.g., "az version")
-		baseCommand = strings.Join(cmdParts[:2], " ")
+	
+	if len(cmdParts) == 0 || cmdParts[0] != CommandTypeAz {
+		return false
 	}
 
-	// Now check if the base command is in our list of allowed read operations
+	// For az commands, we need to handle various command structures:
+	// - "az version" (2 parts)
+	// - "az aks show" (3 parts)
+	// - "az aks check-network outbound" (4 parts)
+	// - "az aks trustedaccess rolebinding list" (5 parts)
+	// - "az aks nodepool get-upgrades" (4 parts)
+	
+	// We'll try to match the longest possible command first by checking against allowed operations
 	for _, allowed := range allowedOperations {
-		if baseCommand == allowed {
-			return true
+		allowedParts := strings.Fields(allowed)
+		
+		// Skip if the allowed operation has more parts than our command
+		if len(allowedParts) > len(cmdParts) {
+			continue
 		}
-
-		// Also check if it's a prefix match (for commands like "az account list")
-		// where we may have just "az account" in our allowed operations
-		if strings.HasPrefix(baseCommand, allowed) {
+		
+		// Check if the command starts with this allowed operation
+		match := true
+		for i, allowedPart := range allowedParts {
+			if i >= len(cmdParts) || cmdParts[i] != allowedPart {
+				match = false
+				break
+			}
+		}
+		
+		if match {
 			return true
 		}
 	}
