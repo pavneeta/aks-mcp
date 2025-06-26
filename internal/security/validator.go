@@ -12,16 +12,44 @@ const (
 var (
 	// AzReadOperations defines az operations that don't modify state
 	AzReadOperations = []string{
+		// Cluster information commands
 		"az aks show",
 		"az aks list",
-		// "az aks get-credentials",
 		"az aks get-versions",
+		"az aks get-upgrades",
+		"az aks check-acr",
+		"az aks check-network outbound",
 		"az aks browse",
+
+		// Addon commands
+		"az aks addon list",
+		"az aks addon show",
+
+		// Nodepool commands
 		"az aks nodepool list",
 		"az aks nodepool show",
-		"az account",
+		"az aks nodepool get-upgrades",
+
+		// Operation and snapshot commands
+		"az aks operation",
+		"az aks snapshot list",
+		"az aks snapshot show",
+
+		// Trusted access commands
+		"az aks trustedaccess rolebinding list",
+		"az aks trustedaccess rolebinding show",
+
+		// Other read operations
+		"az aks install-cli",
+		// "az aks get-credentials", // Commented out as it may require special handling
+
+		// Account management commands
+		"az account list",
+		"az account set",
+		"az login",
+
+		// Other general commands
 		"az find",
-		// "login",
 		"az version",
 		"az help",
 		"az config",
