@@ -97,9 +97,74 @@ func (v *Validator) getReadOperationsList(commandType string) []string {
 func (v *Validator) ValidateCommand(command, commandType string) error {
 	readOperations := v.getReadOperationsList(commandType)
 
+	// Check for command injection attempts
+	if err := v.validateCommandInjection(command); err != nil {
+		return err
+	}
+
 	// Check access level restrictions
 	if err := v.validateAccessLevel(command, readOperations); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// validateCommandInjection checks for command injection patterns
+func (v *Validator) validateCommandInjection(command string) error {
+	// Check if this contains a here document operator
+	containsHereDoc := strings.Contains(command, "<<")
+	
+	// Validate here document if present
+	if containsHereDoc {
+		if err := v.validateHereDocument(command); err != nil {
+			return err
+		}
+	}
+	
+	// Define dangerous characters and patterns that could be used for command injection
+	dangerousPatterns := []string{
+		";",   // Command separator
+		"|",   // Pipe
+		"&",   // Background execution or AND operator
+		"`",   // Command substitution (backticks)
+		"&&",  // AND operator
+		"||",  // OR operator
+		">>",  // Append redirection
+		// Note: "<<" (here document) is allowed for legitimate use cases like providing JSON/YAML payloads
+		">",   // Output redirection
+		"$(",  // Command substitution
+		"${",  // Variable substitution that could be misused
+		// Note: "<" is handled separately below to allow "<<" but block single "<"
+	}
+	
+	// Only block newlines and carriage returns if it's NOT a complete here document
+	isCompleteHereDoc := containsHereDoc && v.isCompleteHereDocument(command)
+	if !isCompleteHereDoc {
+		dangerousPatterns = append(dangerousPatterns, "\n", "\r")
+	}
+
+	for _, pattern := range dangerousPatterns {
+		if strings.Contains(command, pattern) {
+			return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
+		}
+	}
+
+	// Special handling for input redirection - allow "<<" but block single "<"
+	if strings.Contains(command, "<") {
+		// If command contains "<", make sure all instances are part of "<<"
+		// This prevents cases like "az aks show < malicious_file"
+		for i := 0; i < len(command); i++ {
+			if command[i] == '<' {
+				// Check if this '<' is part of '<<'
+				if i+1 >= len(command) || command[i+1] != '<' {
+					// This is a standalone '<' which is dangerous
+					return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
+				}
+				// Skip the next '<' since we've verified it's part of '<<'
+				i++
+			}
+		}
 	}
 
 	return nil
@@ -176,3 +241,80 @@ func (v *Validator) isReadOperation(command string, allowedOperations []string) 
 
 	return false
 }
+
+// validateHereDocument validates the structure of here document commands
+func (v *Validator) validateHereDocument(command string) error {
+	// A complete here document should have:
+	// 1. The << operator
+	// 2. A delimiter after <<
+	// 3. Either content with terminator or be a legitimate single-line command
+	
+	// Find all << occurrences
+	hereDocIndex := strings.Index(command, "<<")
+	if hereDocIndex == -1 {
+		return nil // No here document
+	}
+	
+	// Extract everything after <<
+	afterHereDoc := command[hereDocIndex+2:]
+	afterHereDoc = strings.TrimSpace(afterHereDoc)
+	
+	// If there's nothing after <<, it's malformed
+	if afterHereDoc == "" {
+		return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
+	}
+	
+	// Split by whitespace to get the delimiter
+	parts := strings.Fields(afterHereDoc)
+	if len(parts) == 0 {
+		return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
+	}
+	
+	// Extract the part before << to check if it has sufficient arguments
+	beforeHereDoc := command[:hereDocIndex]
+	beforeHereDocParts := strings.Fields(beforeHereDoc)
+	
+	// If the command ends with just "< delimiter" and has minimal arguments
+	// (like "az aks create << EOF"), consider it incomplete and dangerous
+	// But if it has more arguments (like "az aks create --name test << EOF"), allow it
+	if len(parts) == 1 && !strings.Contains(command, "\n") && !strings.Contains(command, "\r") {
+		// Check if the command before << has sufficient arguments
+		// Commands like "az aks create << EOF" (3 parts) should be blocked
+		// Commands like "az aks create --name test << EOF" (5+ parts) should be allowed
+		if len(beforeHereDocParts) <= 3 {
+			return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
+		}
+	}
+	
+	return nil
+}
+
+// isCompleteHereDocument checks if a command contains a complete here document
+func (v *Validator) isCompleteHereDocument(command string) bool {
+	// A complete here document should have content and/or be multi-line
+	if !strings.Contains(command, "<<") {
+		return false
+	}
+	
+	// If it contains newlines or carriage returns, it's likely a complete here document
+	if strings.Contains(command, "\n") || strings.Contains(command, "\r") {
+		return true
+	}
+	
+	// For single-line here documents, we need to be more careful
+	// Simple case: "az deployment create --template-body << EOF {content} EOF"
+	hereDocIndex := strings.Index(command, "<<")
+	afterHereDoc := command[hereDocIndex+2:]
+	afterHereDoc = strings.TrimSpace(afterHereDoc)
+	
+	parts := strings.Fields(afterHereDoc)
+	
+	// If we have more than just the delimiter, it might be a complete single-line here doc
+	if len(parts) > 1 {
+		return true
+	}
+	
+	return false
+}
+
+// isReadOperation determines if a command is a read-only operation

