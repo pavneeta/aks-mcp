@@ -11,7 +11,7 @@ import (
 
 // GetRouteTableIDFromAKS attempts to find a route table associated with an AKS cluster.
 // It first checks if a subnet is associated with the AKS cluster, then looks for a route table attached to that subnet.
-// If no route table is found, it returns an empty string.
+// If no route table is found, it returns an empty string and no error (this is a valid state).
 func GetRouteTableIDFromAKS(
 	ctx context.Context,
 	cluster *armcontainerservice.ManagedCluster,
@@ -57,7 +57,8 @@ func GetRouteTableIDFromAKS(
 
 	// Check if the subnet has a route table attached
 	if subnet.Properties == nil || subnet.Properties.RouteTable == nil || subnet.Properties.RouteTable.ID == nil {
-		return "", fmt.Errorf("no route table attached to subnet %s", subnetName)
+		// No route table attached - this is a valid configuration state
+		return "", nil
 	}
 
 	routeTableID := *subnet.Properties.RouteTable.ID

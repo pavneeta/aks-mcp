@@ -152,6 +152,20 @@ func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData)
 			return "", fmt.Errorf("failed to get RouteTable ID: %v", err)
 		}
 
+		// Check if no route table is attached (valid configuration state)
+		if rtID == "" {
+			// Return a message indicating no route table is attached
+			response := map[string]interface{}{
+				"message": "No route table attached to the AKS cluster subnet",
+				"reason":  "This is normal for AKS clusters using Azure CNI with Overlay mode or clusters that rely on Azure's default routing",
+			}
+			resultJSON, err := json.MarshalIndent(response, "", "  ")
+			if err != nil {
+				return "", fmt.Errorf("failed to marshal response to JSON: %v", err)
+			}
+			return string(resultJSON), nil
+		}
+
 		// Get the RouteTable details using the resource ID
 		rtInterface, err := client.GetResourceByID(ctx, rtID)
 		if err != nil {
