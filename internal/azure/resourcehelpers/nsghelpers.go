@@ -16,7 +16,6 @@ func GetNSGIDFromAKS(
 	ctx context.Context,
 	cluster *armcontainerservice.ManagedCluster,
 	client *azure.AzureClient,
-	cache *azure.AzureCache,
 ) (string, error) {
 	// Ensure the cluster is valid
 	if cluster == nil || cluster.Properties == nil {
@@ -24,17 +23,9 @@ func GetNSGIDFromAKS(
 	}
 
 	// Get subnet ID using the helper function which handles cases when VnetSubnetID is not set
-	subnetID, err := GetSubnetIDFromAKS(ctx, cluster, client, cache)
+	subnetID, err := GetSubnetIDFromAKS(ctx, cluster, client)
 	if err != nil || subnetID == "" {
 		return "", fmt.Errorf("no subnet found for AKS cluster: %v", err)
-	}
-
-	// Check cache first
-	cacheKey := fmt.Sprintf("subnet-nsg:%s", subnetID)
-	if cachedID, found := cache.Get(cacheKey); found {
-		if nsgID, ok := cachedID.(string); ok {
-			return nsgID, nil
-		}
 	}
 
 	// Parse subnet ID to get subscription, resource group, vnet name and subnet name
@@ -70,9 +61,6 @@ func GetNSGIDFromAKS(
 	}
 
 	nsgID := *subnet.Properties.NetworkSecurityGroup.ID
-
-	// Store in cache
-	cache.Set(cacheKey, nsgID)
 
 	return nsgID, nil
 }

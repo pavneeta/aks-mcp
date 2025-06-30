@@ -15,7 +15,7 @@ import (
 )
 
 // GetVNetInfoHandler returns a handler for the get_vnet_info command
-func GetVNetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg *config.ConfigData) tools.CommandExecutor {
+func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.CommandExecutor {
 	return tools.CommandExecutorFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, ok := params["subscription_id"].(string)
@@ -41,7 +41,7 @@ func GetVNetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg 
 		}
 
 		// Get the VNet ID from the cluster
-		vnetID, err := resourcehelpers.GetVNetIDFromAKS(ctx, cluster, client, cache)
+		vnetID, err := resourcehelpers.GetVNetIDFromAKS(ctx, cluster, client)
 		if err != nil {
 			return "", fmt.Errorf("failed to get VNet ID: %v", err)
 		}
@@ -68,7 +68,7 @@ func GetVNetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg 
 }
 
 // GetNSGInfoHandler returns a handler for the get_nsg_info command
-func GetNSGInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg *config.ConfigData) tools.CommandExecutor {
+func GetNSGInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.CommandExecutor {
 	return tools.CommandExecutorFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, ok := params["subscription_id"].(string)
@@ -94,7 +94,7 @@ func GetNSGInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg *
 		}
 
 		// Get the NSG ID from the cluster
-		nsgID, err := resourcehelpers.GetNSGIDFromAKS(ctx, cluster, client, cache)
+		nsgID, err := resourcehelpers.GetNSGIDFromAKS(ctx, cluster, client)
 		if err != nil {
 			return "", fmt.Errorf("failed to get NSG ID: %v", err)
 		}
@@ -121,7 +121,7 @@ func GetNSGInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg *
 }
 
 // GetRouteTableInfoHandler returns a handler for the get_route_table_info command
-func GetRouteTableInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg *config.ConfigData) tools.CommandExecutor {
+func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.CommandExecutor {
 	return tools.CommandExecutorFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, ok := params["subscription_id"].(string)
@@ -147,7 +147,7 @@ func GetRouteTableInfoHandler(client *azure.AzureClient, cache *azure.AzureCache
 		}
 
 		// Get the RouteTable ID from the cluster
-		rtID, err := resourcehelpers.GetRouteTableIDFromAKS(ctx, cluster, client, cache)
+		rtID, err := resourcehelpers.GetRouteTableIDFromAKS(ctx, cluster, client)
 		if err != nil {
 			return "", fmt.Errorf("failed to get RouteTable ID: %v", err)
 		}
@@ -174,7 +174,7 @@ func GetRouteTableInfoHandler(client *azure.AzureClient, cache *azure.AzureCache
 }
 
 // GetSubnetInfoHandler returns a handler for the get_subnet_info command
-func GetSubnetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg *config.ConfigData) tools.CommandExecutor {
+func GetSubnetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.CommandExecutor {
 	return tools.CommandExecutorFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, ok := params["subscription_id"].(string)
@@ -200,7 +200,7 @@ func GetSubnetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cf
 		}
 
 		// Get the Subnet ID from the cluster
-		subnetID, err := resourcehelpers.GetSubnetIDFromAKS(ctx, cluster, client, cache)
+		subnetID, err := resourcehelpers.GetSubnetIDFromAKS(ctx, cluster, client)
 		if err != nil {
 			return "", fmt.Errorf("failed to get Subnet ID: %v", err)
 		}
@@ -228,6 +228,6 @@ func GetSubnetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cf
 
 // GetClusterDetails gets the details of an AKS cluster
 func GetClusterDetails(ctx context.Context, client *azure.AzureClient, subscriptionID, resourceGroup, clusterName string) (*armcontainerservice.ManagedCluster, error) {
-	// Get the cluster directly using the Azure client
+	// Get the cluster from Azure client (which now handles caching internally)
 	return client.GetAKSCluster(ctx, subscriptionID, resourceGroup, clusterName)
 }

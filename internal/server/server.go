@@ -119,27 +119,26 @@ func (s *Service) registerAzCommands() {
 }
 
 func (s *Service) registerAzureResourceTools() {
-	// Create Azure client and cache for the resource tools
+	// Create Azure client for the resource tools (cache is internal to the client)
 	azClient, err := azure.NewAzureClient()
 	if err != nil {
 		log.Printf("Warning: Failed to create Azure client: %v", err)
 		return
 	}
-	azCache := azure.NewAzureCache()
 
 	// Register VNet info tool
 	vnetTool := resourcehandlers.RegisterVNetInfoTool()
-	s.mcpServer.AddTool(vnetTool, tools.CreateToolHandler(resourcehandlers.GetVNetInfoHandler(azClient, azCache, s.cfg), s.cfg))
+	s.mcpServer.AddTool(vnetTool, tools.CreateToolHandler(resourcehandlers.GetVNetInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register NSG info tool
 	nsgTool := resourcehandlers.RegisterNSGInfoTool()
-	s.mcpServer.AddTool(nsgTool, tools.CreateToolHandler(resourcehandlers.GetNSGInfoHandler(azClient, azCache, s.cfg), s.cfg))
+	s.mcpServer.AddTool(nsgTool, tools.CreateToolHandler(resourcehandlers.GetNSGInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register RouteTable info tool
 	routeTableTool := resourcehandlers.RegisterRouteTableInfoTool()
-	s.mcpServer.AddTool(routeTableTool, tools.CreateToolHandler(resourcehandlers.GetRouteTableInfoHandler(azClient, azCache, s.cfg), s.cfg))
+	s.mcpServer.AddTool(routeTableTool, tools.CreateToolHandler(resourcehandlers.GetRouteTableInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register Subnet info tool
 	subnetTool := resourcehandlers.RegisterSubnetInfoTool()
-	s.mcpServer.AddTool(subnetTool, tools.CreateToolHandler(resourcehandlers.GetSubnetInfoHandler(azClient, azCache, s.cfg), s.cfg))
+	s.mcpServer.AddTool(subnetTool, tools.CreateToolHandler(resourcehandlers.GetSubnetInfoHandler(azClient, s.cfg), s.cfg))
 }

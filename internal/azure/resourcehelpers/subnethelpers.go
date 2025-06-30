@@ -13,7 +13,7 @@ import (
 // It tries to get the subnet ID from the agent pool profiles first.
 // If not found, it will try to find the VNet in the node resource group, and then
 // look for a subnet with the name 'aks-subnet' or use the first subnet if not found.
-func GetSubnetIDFromAKS(ctx context.Context, cluster *armcontainerservice.ManagedCluster, client *azure.AzureClient, cache *azure.AzureCache) (string, error) {
+func GetSubnetIDFromAKS(ctx context.Context, cluster *armcontainerservice.ManagedCluster, client *azure.AzureClient) (string, error) {
 	// First, try to get subnet ID directly from agent pool profiles
 	if cluster.Properties != nil && cluster.Properties.AgentPoolProfiles != nil {
 		for _, pool := range cluster.Properties.AgentPoolProfiles {
@@ -24,7 +24,7 @@ func GetSubnetIDFromAKS(ctx context.Context, cluster *armcontainerservice.Manage
 	}
 
 	// If we couldn't find a subnet ID in the agent pool profiles, try to find the VNet first
-	vnetID, err := GetVNetIDFromAKS(ctx, cluster, client, cache)
+	vnetID, err := GetVNetIDFromAKS(ctx, cluster, client)
 	if err != nil || vnetID == "" {
 		return "", fmt.Errorf("could not find VNet for AKS cluster: %v", err)
 	}

@@ -17,7 +17,6 @@ func GetVNetIDFromAKS(
 	ctx context.Context,
 	cluster *armcontainerservice.ManagedCluster,
 	client *azure.AzureClient,
-	cache *azure.AzureCache,
 ) (string, error) {
 	// Ensure the cluster is valid
 	if cluster == nil || cluster.Properties == nil {
@@ -30,12 +29,14 @@ func GetVNetIDFromAKS(
 			if pool.VnetSubnetID != nil {
 				// The subnet ID contains the VNet ID as its parent resource
 				subnetID := *pool.VnetSubnetID
+				
 				// Parse the subnet ID to extract the VNet ID
 				if parsed, err := azure.ParseResourceID(subnetID); err == nil && parsed.IsSubnet() {
 					// Construct the VNet ID from the subnet ID
 					vnetIDParts := strings.Split(subnetID, "/subnets/")
 					if len(vnetIDParts) > 0 {
-						return vnetIDParts[0], nil
+						vnetID := vnetIDParts[0]
+						return vnetID, nil
 					}
 				}
 				break
@@ -45,7 +46,7 @@ func GetVNetIDFromAKS(
 
 	// Second check: Look for VNet in node resource group
 	if cluster.Properties.NodeResourceGroup != nil {
-		return findVNetInNodeResourceGroup(ctx, cluster, client, cache)
+		return findVNetInNodeResourceGroup(ctx, cluster, client)
 	}
 
 	return "", fmt.Errorf("no virtual network found for AKS cluster")
@@ -57,21 +58,12 @@ func findVNetInNodeResourceGroup(
 	ctx context.Context,
 	cluster *armcontainerservice.ManagedCluster,
 	client *azure.AzureClient,
-	cache *azure.AzureCache,
 ) (string, error) {
 	// Get subscription ID and node resource group
 	subscriptionID := getSubscriptionFromCluster(cluster)
 	nodeResourceGroup := *cluster.Properties.NodeResourceGroup
 
-	// Check cache first
-	cacheKey := fmt.Sprintf("noderesourcegroup-vnet:%s:%s", subscriptionID, nodeResourceGroup)
-	if cachedID, found := cache.Get(cacheKey); found {
-		if vnetID, ok := cachedID.(string); ok && vnetID != "" {
-			return vnetID, nil
-		}
-	}
-
-	// List virtual networks in the node resource group
+	// List virtual networks in the node resource group (now cached at client level)
 	clients, err := client.GetOrCreateClientsForSubscription(subscriptionID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get clients for subscription %s: %v", subscriptionID, err)
@@ -87,10 +79,7 @@ func findVNetInNodeResourceGroup(
 		for _, vnet := range page.Value {
 			// Check for VNet with prefix "aks-vnet-"
 			if vnet.Name != nil && strings.HasPrefix(*vnet.Name, "aks-vnet-") {
-				vnetID := *vnet.ID
-				// Store in cache
-				cache.Set(cacheKey, vnetID)
-				return vnetID, nil
+				return *vnet.ID, nil
 			}
 		}
 	}
