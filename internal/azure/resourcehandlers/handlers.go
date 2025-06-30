@@ -11,6 +11,7 @@ import (
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 )
 
 // GetVNetInfoHandler returns a handler for the get_vnet_info command
@@ -45,21 +46,15 @@ func GetVNetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg 
 			return "", fmt.Errorf("failed to get VNet ID: %v", err)
 		}
 
-		// Parse the VNet ID
-		vnetResourceID, err := azure.ParseResourceID(vnetID)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse VNet ID: %v", err)
-		}
-
-		// Get the VNet details
-		clients, err := client.GetOrCreateClientsForSubscription(vnetResourceID.SubscriptionID)
-		if err != nil {
-			return "", fmt.Errorf("failed to get clients for subscription %s: %v", vnetResourceID.SubscriptionID, err)
-		}
-
-		vnet, err := clients.VNetClient.Get(ctx, vnetResourceID.ResourceGroup, vnetResourceID.ResourceName, nil)
+		// Get the VNet details using the resource ID
+		vnetInterface, err := client.GetResourceByID(ctx, vnetID)
 		if err != nil {
 			return "", fmt.Errorf("failed to get VNet details: %v", err)
+		}
+
+		vnet, ok := vnetInterface.(*armnetwork.VirtualNetwork)
+		if !ok {
+			return "", fmt.Errorf("unexpected resource type returned for VNet")
 		}
 
 		// Return the VNet details directly as JSON
@@ -104,21 +99,15 @@ func GetNSGInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg *
 			return "", fmt.Errorf("failed to get NSG ID: %v", err)
 		}
 
-		// Parse the NSG ID
-		nsgResourceID, err := azure.ParseResourceID(nsgID)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse NSG ID: %v", err)
-		}
-
-		// Get the NSG details
-		clients, err := client.GetOrCreateClientsForSubscription(nsgResourceID.SubscriptionID)
-		if err != nil {
-			return "", fmt.Errorf("failed to get clients for subscription %s: %v", nsgResourceID.SubscriptionID, err)
-		}
-
-		nsg, err := clients.NSGClient.Get(ctx, nsgResourceID.ResourceGroup, nsgResourceID.ResourceName, nil)
+		// Get the NSG details using the resource ID
+		nsgInterface, err := client.GetResourceByID(ctx, nsgID)
 		if err != nil {
 			return "", fmt.Errorf("failed to get NSG details: %v", err)
+		}
+
+		nsg, ok := nsgInterface.(*armnetwork.SecurityGroup)
+		if !ok {
+			return "", fmt.Errorf("unexpected resource type returned for NSG")
 		}
 
 		// Return the NSG details directly as JSON
@@ -163,21 +152,15 @@ func GetRouteTableInfoHandler(client *azure.AzureClient, cache *azure.AzureCache
 			return "", fmt.Errorf("failed to get RouteTable ID: %v", err)
 		}
 
-		// Parse the RouteTable ID
-		rtResourceID, err := azure.ParseResourceID(rtID)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse RouteTable ID: %v", err)
-		}
-
-		// Get the RouteTable details
-		clients, err := client.GetOrCreateClientsForSubscription(rtResourceID.SubscriptionID)
-		if err != nil {
-			return "", fmt.Errorf("failed to get clients for subscription %s: %v", rtResourceID.SubscriptionID, err)
-		}
-
-		rt, err := clients.RouteTableClient.Get(ctx, rtResourceID.ResourceGroup, rtResourceID.ResourceName, nil)
+		// Get the RouteTable details using the resource ID
+		rtInterface, err := client.GetResourceByID(ctx, rtID)
 		if err != nil {
 			return "", fmt.Errorf("failed to get RouteTable details: %v", err)
+		}
+
+		rt, ok := rtInterface.(*armnetwork.RouteTable)
+		if !ok {
+			return "", fmt.Errorf("unexpected resource type returned for RouteTable")
 		}
 
 		// Return the RouteTable details directly as JSON
@@ -222,21 +205,15 @@ func GetSubnetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cf
 			return "", fmt.Errorf("failed to get Subnet ID: %v", err)
 		}
 
-		// Parse the Subnet ID
-		subnetResourceID, err := azure.ParseResourceID(subnetID)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse Subnet ID: %v", err)
-		}
-
-		// For subnets, the vnet name is ResourceName and subnet name is SubResourceName
-		clients, err := client.GetOrCreateClientsForSubscription(subnetResourceID.SubscriptionID)
-		if err != nil {
-			return "", fmt.Errorf("failed to get clients for subscription %s: %v", subnetResourceID.SubscriptionID, err)
-		}
-
-		subnet, err := clients.SubnetsClient.Get(ctx, subnetResourceID.ResourceGroup, subnetResourceID.ResourceName, subnetResourceID.SubResourceName, nil)
+		// Get the Subnet details using the resource ID
+		subnetInterface, err := client.GetResourceByID(ctx, subnetID)
 		if err != nil {
 			return "", fmt.Errorf("failed to get Subnet details: %v", err)
+		}
+
+		subnet, ok := subnetInterface.(*armnetwork.Subnet)
+		if !ok {
+			return "", fmt.Errorf("unexpected resource type returned for Subnet")
 		}
 
 		// Return the Subnet details directly as JSON
