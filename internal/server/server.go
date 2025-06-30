@@ -128,17 +128,17 @@ func (s *Service) registerAzureResourceTools() {
 
 	// Register VNet info tool
 	vnetTool := resourcehandlers.RegisterVNetInfoTool()
-	s.mcpServer.AddTool(vnetTool, tools.CreateToolHandler(resourcehandlers.GetVNetInfoHandler(azClient, s.cfg), s.cfg))
+	s.mcpServer.AddTool(vnetTool, tools.CreateResourceHandler(resourcehandlers.GetVNetInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register NSG info tool
 	nsgTool := resourcehandlers.RegisterNSGInfoTool()
-	s.mcpServer.AddTool(nsgTool, tools.CreateToolHandler(resourcehandlers.GetNSGInfoHandler(azClient, s.cfg), s.cfg))
+	s.mcpServer.AddTool(nsgTool, tools.CreateResourceHandler(resourcehandlers.GetNSGInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register RouteTable info tool
 	routeTableTool := resourcehandlers.RegisterRouteTableInfoTool()
-	s.mcpServer.AddTool(routeTableTool, tools.CreateToolHandler(resourcehandlers.GetRouteTableInfoHandler(azClient, s.cfg), s.cfg))
+	s.mcpServer.AddTool(routeTableTool, tools.CreateResourceHandler(resourcehandlers.GetRouteTableInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register Subnet info tool
 	subnetTool := resourcehandlers.RegisterSubnetInfoTool()
-	s.mcpServer.AddTool(subnetTool, tools.CreateToolHandler(resourcehandlers.GetSubnetInfoHandler(azClient, s.cfg), s.cfg))
+	s.mcpServer.AddTool(subnetTool, tools.CreateResourceHandler(resourcehandlers.GetSubnetInfoHandler(azClient, s.cfg), s.cfg))
 }

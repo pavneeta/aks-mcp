@@ -15,8 +15,8 @@ import (
 )
 
 // GetVNetInfoHandler returns a handler for the get_vnet_info command
-func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.CommandExecutor {
-	return tools.CommandExecutorFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
+func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, ok := params["subscription_id"].(string)
 		if !ok || subID == "" {
@@ -68,8 +68,8 @@ func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools
 }
 
 // GetNSGInfoHandler returns a handler for the get_nsg_info command
-func GetNSGInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.CommandExecutor {
-	return tools.CommandExecutorFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
+func GetNSGInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, ok := params["subscription_id"].(string)
 		if !ok || subID == "" {
@@ -121,8 +121,8 @@ func GetNSGInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.
 }
 
 // GetRouteTableInfoHandler returns a handler for the get_route_table_info command
-func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.CommandExecutor {
-	return tools.CommandExecutorFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
+func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, ok := params["subscription_id"].(string)
 		if !ok || subID == "" {
@@ -188,8 +188,8 @@ func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData)
 }
 
 // GetSubnetInfoHandler returns a handler for the get_subnet_info command
-func GetSubnetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.CommandExecutor {
-	return tools.CommandExecutorFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
+func GetSubnetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, ok := params["subscription_id"].(string)
 		if !ok || subID == "" {
