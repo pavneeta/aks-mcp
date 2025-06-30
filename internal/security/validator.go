@@ -114,30 +114,30 @@ func (v *Validator) ValidateCommand(command, commandType string) error {
 func (v *Validator) validateCommandInjection(command string) error {
 	// Check if this contains a here document operator
 	containsHereDoc := strings.Contains(command, "<<")
-	
+
 	// Validate here document if present
 	if containsHereDoc {
 		if err := v.validateHereDocument(command); err != nil {
 			return err
 		}
 	}
-	
+
 	// Define dangerous characters and patterns that could be used for command injection
 	dangerousPatterns := []string{
-		";",   // Command separator
-		"|",   // Pipe
-		"&",   // Background execution or AND operator
-		"`",   // Command substitution (backticks)
-		"&&",  // AND operator
-		"||",  // OR operator
-		">>",  // Append redirection
+		";",  // Command separator
+		"|",  // Pipe
+		"&",  // Background execution or AND operator
+		"`",  // Command substitution (backticks)
+		"&&", // AND operator
+		"||", // OR operator
+		">>", // Append redirection
 		// Note: "<<" (here document) is allowed for legitimate use cases like providing JSON/YAML payloads
-		">",   // Output redirection
-		"$(",  // Command substitution
-		"${",  // Variable substitution that could be misused
+		">",  // Output redirection
+		"$(", // Command substitution
+		"${", // Variable substitution that could be misused
 		// Note: "<" is handled separately below to allow "<<" but block single "<"
 	}
-	
+
 	// Only block newlines and carriage returns if it's NOT a complete here document
 	isCompleteHereDoc := containsHereDoc && v.isCompleteHereDocument(command)
 	if !isCompleteHereDoc {
@@ -204,7 +204,7 @@ func (v *Validator) isReadOperation(command string, allowedOperations []string) 
 	// Normalize command by removing any options/arguments
 	// This extracts the base command like "az aks show" from "az aks show --name myCluster"
 	cmdParts := strings.Fields(command)
-	
+
 	if len(cmdParts) == 0 || cmdParts[0] != CommandTypeAz {
 		return false
 	}
@@ -215,16 +215,16 @@ func (v *Validator) isReadOperation(command string, allowedOperations []string) 
 	// - "az aks check-network outbound" (4 parts)
 	// - "az aks trustedaccess rolebinding list" (5 parts)
 	// - "az aks nodepool get-upgrades" (4 parts)
-	
+
 	// We'll try to match the longest possible command first by checking against allowed operations
 	for _, allowed := range allowedOperations {
 		allowedParts := strings.Fields(allowed)
-		
+
 		// Skip if the allowed operation has more parts than our command
 		if len(allowedParts) > len(cmdParts) {
 			continue
 		}
-		
+
 		// Check if the command starts with this allowed operation
 		match := true
 		for i, allowedPart := range allowedParts {
@@ -233,7 +233,7 @@ func (v *Validator) isReadOperation(command string, allowedOperations []string) 
 				break
 			}
 		}
-		
+
 		if match {
 			return true
 		}
@@ -248,32 +248,32 @@ func (v *Validator) validateHereDocument(command string) error {
 	// 1. The << operator
 	// 2. A delimiter after <<
 	// 3. Either content with terminator or be a legitimate single-line command
-	
+
 	// Find all << occurrences
 	hereDocIndex := strings.Index(command, "<<")
 	if hereDocIndex == -1 {
 		return nil // No here document
 	}
-	
+
 	// Extract everything after <<
 	afterHereDoc := command[hereDocIndex+2:]
 	afterHereDoc = strings.TrimSpace(afterHereDoc)
-	
+
 	// If there's nothing after <<, it's malformed
 	if afterHereDoc == "" {
 		return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
 	}
-	
+
 	// Split by whitespace to get the delimiter
 	parts := strings.Fields(afterHereDoc)
 	if len(parts) == 0 {
 		return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
 	}
-	
+
 	// Extract the part before << to check if it has sufficient arguments
 	beforeHereDoc := command[:hereDocIndex]
 	beforeHereDocParts := strings.Fields(beforeHereDoc)
-	
+
 	// If the command ends with just "< delimiter" and has minimal arguments
 	// (like "az aks create << EOF"), consider it incomplete and dangerous
 	// But if it has more arguments (like "az aks create --name test << EOF"), allow it
@@ -285,7 +285,7 @@ func (v *Validator) validateHereDocument(command string) error {
 			return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -295,25 +295,25 @@ func (v *Validator) isCompleteHereDocument(command string) bool {
 	if !strings.Contains(command, "<<") {
 		return false
 	}
-	
+
 	// If it contains newlines or carriage returns, it's likely a complete here document
 	if strings.Contains(command, "\n") || strings.Contains(command, "\r") {
 		return true
 	}
-	
+
 	// For single-line here documents, we need to be more careful
 	// Simple case: "az deployment create --template-body << EOF {content} EOF"
 	hereDocIndex := strings.Index(command, "<<")
 	afterHereDoc := command[hereDocIndex+2:]
 	afterHereDoc = strings.TrimSpace(afterHereDoc)
-	
+
 	parts := strings.Fields(afterHereDoc)
-	
+
 	// If we have more than just the delimiter, it might be a complete single-line here doc
 	if len(parts) > 1 {
 		return true
 	}
-	
+
 	return false
 }
 

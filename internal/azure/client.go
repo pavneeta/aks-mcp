@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
-	"github.com/Azure/aks-mcp/internal/config"
 )
 
 // SubscriptionClients contains Azure clients for a specific subscription.
@@ -113,7 +113,7 @@ func (c *AzureClient) GetOrCreateClientsForSubscription(subscriptionID string) (
 func (c *AzureClient) GetAKSCluster(ctx context.Context, subscriptionID, resourceGroup, clusterName string) (*armcontainerservice.ManagedCluster, error) {
 	// Create cache key
 	cacheKey := fmt.Sprintf("resource:cluster:%s:%s:%s", subscriptionID, resourceGroup, clusterName)
-	
+
 	// Check cache first
 	if cached, found := c.cache.Get(cacheKey); found {
 		if cluster, ok := cached.(*armcontainerservice.ManagedCluster); ok {
@@ -130,11 +130,11 @@ func (c *AzureClient) GetAKSCluster(ctx context.Context, subscriptionID, resourc
 	if err != nil {
 		return nil, fmt.Errorf("failed to get AKS cluster: %v", err)
 	}
-	
+
 	cluster := &resp.ManagedCluster
 	// Store in cache
 	c.cache.Set(cacheKey, cluster)
-	
+
 	return cluster, nil
 }
 
@@ -142,7 +142,7 @@ func (c *AzureClient) GetAKSCluster(ctx context.Context, subscriptionID, resourc
 func (c *AzureClient) GetVirtualNetwork(ctx context.Context, subscriptionID, resourceGroup, vnetName string) (*armnetwork.VirtualNetwork, error) {
 	// Create cache key
 	cacheKey := fmt.Sprintf("resource:vnet:%s:%s:%s", subscriptionID, resourceGroup, vnetName)
-	
+
 	// Check cache first
 	if cached, found := c.cache.Get(cacheKey); found {
 		if vnet, ok := cached.(*armnetwork.VirtualNetwork); ok {
@@ -159,11 +159,11 @@ func (c *AzureClient) GetVirtualNetwork(ctx context.Context, subscriptionID, res
 	if err != nil {
 		return nil, fmt.Errorf("failed to get virtual network: %v", err)
 	}
-	
+
 	vnet := &resp.VirtualNetwork
 	// Store in cache
 	c.cache.Set(cacheKey, vnet)
-	
+
 	return vnet, nil
 }
 
@@ -171,7 +171,7 @@ func (c *AzureClient) GetVirtualNetwork(ctx context.Context, subscriptionID, res
 func (c *AzureClient) GetRouteTable(ctx context.Context, subscriptionID, resourceGroup, routeTableName string) (*armnetwork.RouteTable, error) {
 	// Create cache key
 	cacheKey := fmt.Sprintf("resource:routetable:%s:%s:%s", subscriptionID, resourceGroup, routeTableName)
-	
+
 	// Check cache first
 	if cached, found := c.cache.Get(cacheKey); found {
 		if routeTable, ok := cached.(*armnetwork.RouteTable); ok {
@@ -188,11 +188,11 @@ func (c *AzureClient) GetRouteTable(ctx context.Context, subscriptionID, resourc
 	if err != nil {
 		return nil, fmt.Errorf("failed to get route table: %v", err)
 	}
-	
+
 	routeTable := &resp.RouteTable
 	// Store in cache
 	c.cache.Set(cacheKey, routeTable)
-	
+
 	return routeTable, nil
 }
 
@@ -200,7 +200,7 @@ func (c *AzureClient) GetRouteTable(ctx context.Context, subscriptionID, resourc
 func (c *AzureClient) GetNetworkSecurityGroup(ctx context.Context, subscriptionID, resourceGroup, nsgName string) (*armnetwork.SecurityGroup, error) {
 	// Create cache key
 	cacheKey := fmt.Sprintf("resource:nsg:%s:%s:%s", subscriptionID, resourceGroup, nsgName)
-	
+
 	// Check cache first
 	if cached, found := c.cache.Get(cacheKey); found {
 		if nsg, ok := cached.(*armnetwork.SecurityGroup); ok {
@@ -217,11 +217,11 @@ func (c *AzureClient) GetNetworkSecurityGroup(ctx context.Context, subscriptionI
 	if err != nil {
 		return nil, fmt.Errorf("failed to get network security group: %v", err)
 	}
-	
+
 	nsg := &resp.SecurityGroup
 	// Store in cache
 	c.cache.Set(cacheKey, nsg)
-	
+
 	return nsg, nil
 }
 
@@ -229,7 +229,7 @@ func (c *AzureClient) GetNetworkSecurityGroup(ctx context.Context, subscriptionI
 func (c *AzureClient) GetSubnet(ctx context.Context, subscriptionID, resourceGroup, vnetName, subnetName string) (*armnetwork.Subnet, error) {
 	// Create cache key
 	cacheKey := fmt.Sprintf("resource:subnet:%s:%s:%s:%s", subscriptionID, resourceGroup, vnetName, subnetName)
-	
+
 	// Check cache first
 	if cached, found := c.cache.Get(cacheKey); found {
 		if subnet, ok := cached.(*armnetwork.Subnet); ok {
@@ -246,11 +246,11 @@ func (c *AzureClient) GetSubnet(ctx context.Context, subscriptionID, resourceGro
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subnet: %v", err)
 	}
-	
+
 	subnet := &resp.Subnet
 	// Store in cache
 	c.cache.Set(cacheKey, subnet)
-	
+
 	return subnet, nil
 }
 

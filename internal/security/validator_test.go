@@ -577,7 +577,7 @@ func TestValidateCommandInjection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.ValidateCommand(tt.command, CommandTypeAz)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error for %s: %s", tt.description, tt.command)
 			}
@@ -615,7 +615,7 @@ func TestValidateCommandInjection_IsolatedFunction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.validateCommandInjection(tt.command)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("validateCommandInjection(%q) expected error but got none", tt.command)
 			}
@@ -709,7 +709,7 @@ func TestValidateCommandInjection_HereDocuments(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.validateCommandInjection(tt.command)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error but got none for command: %q", tt.command)
 			}
@@ -768,7 +768,7 @@ func TestValidateCommandInjection_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.validateCommandInjection(tt.command)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error but got none for command: %q", tt.command)
 			}

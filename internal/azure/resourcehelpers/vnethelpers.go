@@ -29,7 +29,7 @@ func GetVNetIDFromAKS(
 			if pool.VnetSubnetID != nil {
 				// The subnet ID contains the VNet ID as its parent resource
 				subnetID := *pool.VnetSubnetID
-				
+
 				// Parse the subnet ID to extract the VNet ID
 				if parsed, err := azure.ParseResourceID(subnetID); err == nil && parsed.IsSubnet() {
 					// Construct the VNet ID from the subnet ID
