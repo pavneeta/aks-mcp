@@ -19,11 +19,11 @@ type cacheItem struct {
 	expiration time.Time
 }
 
-// NewAzureCache creates a new cache with the default timeout.
-func NewAzureCache() *AzureCache {
+// NewAzureCache creates a new cache with the specified timeout.
+func NewAzureCache(timeout time.Duration) *AzureCache {
 	return &AzureCache{
 		data:           make(map[string]cacheItem),
-		defaultTimeout: 1 * time.Minute, // Default 1 minute cache timeout
+		defaultTimeout: timeout,
 	}
 }
 

@@ -120,7 +120,7 @@ func (s *Service) registerAzCommands() {
 
 func (s *Service) registerAzureResourceTools() {
 	// Create Azure client for the resource tools (cache is internal to the client)
-	azClient, err := azure.NewAzureClient()
+	azClient, err := azure.NewAzureClient(s.cfg)
 	if err != nil {
 		log.Printf("Warning: Failed to create Azure client: %v", err)
 		return

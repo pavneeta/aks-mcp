@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
+	"github.com/Azure/aks-mcp/internal/config"
 )
 
 // SubscriptionClients contains Azure clients for a specific subscription.
@@ -33,8 +34,8 @@ type AzureClient struct {
 	cache *AzureCache
 }
 
-// NewAzureClient creates a new Azure client using default credentials.
-func NewAzureClient() (*AzureClient, error) {
+// NewAzureClient creates a new Azure client using default credentials and the provided configuration.
+func NewAzureClient(cfg *config.ConfigData) (*AzureClient, error) {
 	// Create a credential using DefaultAzureCredential
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
@@ -44,7 +45,7 @@ func NewAzureClient() (*AzureClient, error) {
 	return &AzureClient{
 		clientsMap: make(map[string]*SubscriptionClients),
 		credential: cred,
-		cache:      NewAzureCache(),
+		cache:      NewAzureCache(cfg.CacheTimeout),
 	}, nil
 }
 

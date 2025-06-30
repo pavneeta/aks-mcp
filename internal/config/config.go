@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/Azure/aks-mcp/internal/security"
 	flag "github.com/spf13/pflag"
 )
@@ -9,6 +11,8 @@ import (
 type ConfigData struct {
 	// Command execution timeout in seconds
 	Timeout int
+	// Cache timeout for Azure resources
+	CacheTimeout time.Duration
 	// Security configuration
 	SecurityConfig *security.SecurityConfig
 
@@ -23,6 +27,7 @@ type ConfigData struct {
 func NewConfig() *ConfigData {
 	return &ConfigData{
 		Timeout:        60,
+		CacheTimeout:   1 * time.Minute,
 		SecurityConfig: security.NewSecurityConfig(),
 		Transport:      "stdio",
 		Port:           8000,
