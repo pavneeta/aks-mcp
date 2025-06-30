@@ -30,11 +30,6 @@ type AzureResourceID struct {
 	FullID          string
 }
 
-// ParseAzureResourceID parses an Azure resource ID into its components.
-func ParseAzureResourceID(resourceID string) (*AzureResourceID, error) {
-	return ParseResourceID(resourceID)
-}
-
 // ParseResourceID parses an Azure resource ID into its components.
 func ParseResourceID(resourceID string) (*AzureResourceID, error) {
 	if resourceID == "" {
