@@ -9,7 +9,6 @@ import (
 	"github.com/Azure/aks-mcp/internal/azure"
 	"github.com/Azure/aks-mcp/internal/azure/resourcehelpers"
 	"github.com/Azure/aks-mcp/internal/config"
-	"github.com/Azure/aks-mcp/internal/models"
 	"github.com/Azure/aks-mcp/internal/tools"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 )
@@ -63,61 +62,8 @@ func GetVNetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg 
 			return "", fmt.Errorf("failed to get VNet details: %v", err)
 		}
 
-		// Convert to our model
-		vnetInfo := models.VNetInfo{
-			Name:              *vnet.Name,
-			ResourceGroup:     vnetResourceID.ResourceGroup,
-			Location:          *vnet.Location,
-			ID:                *vnet.ID,
-			ResourceGUID:      *vnet.Properties.ResourceGUID,
-			ProvisioningState: string(*vnet.Properties.ProvisioningState),
-		}
-
-		if vnet.Properties.AddressSpace != nil && vnet.Properties.AddressSpace.AddressPrefixes != nil {
-			vnetInfo.AddressSpace = make([]string, len(vnet.Properties.AddressSpace.AddressPrefixes))
-			for i, prefix := range vnet.Properties.AddressSpace.AddressPrefixes {
-				vnetInfo.AddressSpace[i] = *prefix
-			}
-		}
-
-		// Include subnet information
-		if vnet.Properties.Subnets != nil {
-			vnetInfo.Subnets = make([]models.SubnetInfo, 0, len(vnet.Properties.Subnets))
-			for _, subnet := range vnet.Properties.Subnets {
-				subnetInfo := models.SubnetInfo{
-					Name:              *subnet.Name,
-					ID:                *subnet.ID,
-					AddressPrefix:     *subnet.Properties.AddressPrefix,
-					ProvisioningState: string(*subnet.Properties.ProvisioningState),
-				}
-				
-				// Add optional properties
-				if subnet.Properties.NetworkSecurityGroup != nil && subnet.Properties.NetworkSecurityGroup.ID != nil {
-					subnetInfo.NetworkSecurityGroup = *subnet.Properties.NetworkSecurityGroup.ID
-				}
-				
-				if subnet.Properties.RouteTable != nil && subnet.Properties.RouteTable.ID != nil {
-					subnetInfo.RouteTable = *subnet.Properties.RouteTable.ID
-				}
-				
-				vnetInfo.Subnets = append(vnetInfo.Subnets, subnetInfo)
-			}
-		}
-
-		// Parse the tags
-		if vnet.Tags != nil {
-			vnetInfo.Tags = make(map[string]string)
-			for k, v := range vnet.Tags {
-				if v != nil {
-					vnetInfo.Tags[k] = *v
-				} else {
-					vnetInfo.Tags[k] = ""
-				}
-			}
-		}
-
-		// Return the result as JSON
-		resultJSON, err := json.MarshalIndent(vnetInfo, "", "  ")
+		// Return the VNet details directly as JSON
+		resultJSON, err := json.MarshalIndent(vnet, "", "  ")
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal VNet info to JSON: %v", err)
 		}
@@ -175,50 +121,8 @@ func GetNSGInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cfg *
 			return "", fmt.Errorf("failed to get NSG details: %v", err)
 		}
 
-		// Convert to our model
-		nsgInfo := models.NSGInfo{
-			Name:              *nsg.Name,
-			ResourceGroup:     nsgResourceID.ResourceGroup,
-			Location:          *nsg.Location,
-			ID:                *nsg.ID,
-			ProvisioningState: string(*nsg.Properties.ProvisioningState),
-		}
-
-		// Parse security rules
-		if nsg.Properties.SecurityRules != nil {
-			nsgInfo.SecurityRules = make([]models.NSGRule, 0, len(nsg.Properties.SecurityRules))
-			for _, rule := range nsg.Properties.SecurityRules {
-				secRule := models.NSGRule{
-					Name:                     *rule.Name,
-					ID:                       *rule.ID,
-					Priority:                 *rule.Properties.Priority,
-					Direction:                string(*rule.Properties.Direction),
-					Access:                   string(*rule.Properties.Access),
-					Protocol:                 string(*rule.Properties.Protocol),
-					SourcePortRange:          *rule.Properties.SourcePortRange,
-					DestinationPortRange:     *rule.Properties.DestinationPortRange,
-					SourceAddressPrefix:      *rule.Properties.SourceAddressPrefix,
-					DestinationAddressPrefix: *rule.Properties.DestinationAddressPrefix,
-				}
-				
-				nsgInfo.SecurityRules = append(nsgInfo.SecurityRules, secRule)
-			}
-		}
-
-		// Parse the tags
-		if nsg.Tags != nil {
-			nsgInfo.Tags = make(map[string]string)
-			for k, v := range nsg.Tags {
-				if v != nil {
-					nsgInfo.Tags[k] = *v
-				} else {
-					nsgInfo.Tags[k] = ""
-				}
-			}
-		}
-
-		// Return the result as JSON
-		resultJSON, err := json.MarshalIndent(nsgInfo, "", "  ")
+		// Return the NSG details directly as JSON
+		resultJSON, err := json.MarshalIndent(nsg, "", "  ")
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal NSG info to JSON: %v", err)
 		}
@@ -276,49 +180,8 @@ func GetRouteTableInfoHandler(client *azure.AzureClient, cache *azure.AzureCache
 			return "", fmt.Errorf("failed to get RouteTable details: %v", err)
 		}
 
-		// Convert to our model
-		rtInfo := models.RouteTableInfo{
-			Name:              *rt.Name,
-			ResourceGroup:     rtResourceID.ResourceGroup,
-			Location:          *rt.Location,
-			ID:                *rt.ID,
-			ProvisioningState: string(*rt.Properties.ProvisioningState),
-		}
-
-		// Parse routes
-		if rt.Properties.Routes != nil {
-			rtInfo.Routes = make([]models.RouteInfo, 0, len(rt.Properties.Routes))
-			for _, route := range rt.Properties.Routes {
-				r := models.RouteInfo{
-					Name:                *route.Name,
-					ID:                  *route.ID,
-					AddressPrefix:       *route.Properties.AddressPrefix,
-					NextHopType:         string(*route.Properties.NextHopType),
-					ProvisioningState:   string(*route.Properties.ProvisioningState),
-				}
-				
-				if route.Properties.NextHopIPAddress != nil {
-					r.NextHopIPAddress = *route.Properties.NextHopIPAddress
-				}
-				
-				rtInfo.Routes = append(rtInfo.Routes, r)
-			}
-		}
-
-		// Parse the tags
-		if rt.Tags != nil {
-			rtInfo.Tags = make(map[string]string)
-			for k, v := range rt.Tags {
-				if v != nil {
-					rtInfo.Tags[k] = *v
-				} else {
-					rtInfo.Tags[k] = ""
-				}
-			}
-		}
-
-		// Return the result as JSON
-		resultJSON, err := json.MarshalIndent(rtInfo, "", "  ")
+		// Return the RouteTable details directly as JSON
+		resultJSON, err := json.MarshalIndent(rt, "", "  ")
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal RouteTable info to JSON: %v", err)
 		}
@@ -376,25 +239,8 @@ func GetSubnetInfoHandler(client *azure.AzureClient, cache *azure.AzureCache, cf
 			return "", fmt.Errorf("failed to get Subnet details: %v", err)
 		}
 
-	// Convert to our model
-	subnetInfo := models.SubnetInfo{
-		Name:              *subnet.Name,
-		ID:                *subnet.ID,
-		AddressPrefix:     *subnet.Properties.AddressPrefix,
-		ProvisioningState: string(*subnet.Properties.ProvisioningState),
-	}
-
-		// Add optional properties
-		if subnet.Properties.NetworkSecurityGroup != nil && subnet.Properties.NetworkSecurityGroup.ID != nil {
-			subnetInfo.NetworkSecurityGroup = *subnet.Properties.NetworkSecurityGroup.ID
-		}
-		
-		if subnet.Properties.RouteTable != nil && subnet.Properties.RouteTable.ID != nil {
-			subnetInfo.RouteTable = *subnet.Properties.RouteTable.ID
-		}
-
-		// Return the result as JSON
-		resultJSON, err := json.MarshalIndent(subnetInfo, "", "  ")
+		// Return the Subnet details directly as JSON
+		resultJSON, err := json.MarshalIndent(subnet, "", "  ")
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal Subnet info to JSON: %v", err)
 		}
