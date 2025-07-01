@@ -5,6 +5,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+// Network-related tool registrations
+
 // RegisterVNetInfoTool registers the get_vnet_info tool
 func RegisterVNetInfoTool() mcp.Tool {
 	return mcp.NewTool(
@@ -84,3 +86,5 @@ func RegisterSubnetInfoTool() mcp.Tool {
 		),
 	)
 }
+
+// TODO: Future tool categories can be added here:

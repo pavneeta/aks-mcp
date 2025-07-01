@@ -126,19 +126,33 @@ func (s *Service) registerAzureResourceTools() {
 		return
 	}
 
+	// Register Network-related tools
+	s.registerNetworkTools(azClient)
+
+	// TODO: Add other resource categories in the future:
+}
+
+// registerNetworkTools registers all network-related Azure resource tools
+func (s *Service) registerNetworkTools(azClient *azure.AzureClient) {
+	log.Println("Registering Network tools...")
+
 	// Register VNet info tool
+	log.Println("Registering network tool: get_vnet_info")
 	vnetTool := resourcehandlers.RegisterVNetInfoTool()
 	s.mcpServer.AddTool(vnetTool, tools.CreateResourceHandler(resourcehandlers.GetVNetInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register NSG info tool
+	log.Println("Registering network tool: get_nsg_info")
 	nsgTool := resourcehandlers.RegisterNSGInfoTool()
 	s.mcpServer.AddTool(nsgTool, tools.CreateResourceHandler(resourcehandlers.GetNSGInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register RouteTable info tool
+	log.Println("Registering network tool: get_route_table_info")
 	routeTableTool := resourcehandlers.RegisterRouteTableInfoTool()
 	s.mcpServer.AddTool(routeTableTool, tools.CreateResourceHandler(resourcehandlers.GetRouteTableInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register Subnet info tool
+	log.Println("Registering network tool: get_subnet_info")
 	subnetTool := resourcehandlers.RegisterSubnetInfoTool()
 	s.mcpServer.AddTool(subnetTool, tools.CreateResourceHandler(resourcehandlers.GetSubnetInfoHandler(azClient, s.cfg), s.cfg))
 }

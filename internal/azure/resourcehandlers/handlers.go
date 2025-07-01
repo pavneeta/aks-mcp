@@ -14,6 +14,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 )
 
+// =============================================================================
+// Network-related Handlers
+// =============================================================================
+
 // GetVNetInfoHandler returns a handler for the get_vnet_info command
 func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
@@ -240,8 +244,16 @@ func GetSubnetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) too
 	})
 }
 
+// =============================================================================
+// Shared Helper Functions
+// =============================================================================
+
 // GetClusterDetails gets the details of an AKS cluster
 func GetClusterDetails(ctx context.Context, client *azure.AzureClient, subscriptionID, resourceGroup, clusterName string) (*armcontainerservice.ManagedCluster, error) {
 	// Get the cluster from Azure client (which now handles caching internally)
 	return client.GetAKSCluster(ctx, subscriptionID, resourceGroup, clusterName)
 }
+
+// =============================================================================
+// TODO: Future Handler Categories
+// =============================================================================
