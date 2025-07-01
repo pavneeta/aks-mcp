@@ -1,4 +1,3 @@
-// Package resourcehandlers provides handler functions for Azure resource tools.
 package resourcehandlers
 
 import (

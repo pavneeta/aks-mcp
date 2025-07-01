@@ -1,4 +1,3 @@
-// Package resourcehelpers provides helper functions for working with Azure resources in AKS MCP server.
 package resourcehelpers
 
 import (
