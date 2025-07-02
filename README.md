@@ -41,22 +41,6 @@ Configure your MCP servers in supported AI clients like [GitHub Copilot](https:/
 }
 ```
 
-You can also specify a specific AKS cluster to work with:
-
-```json
-{
-  "mcpServers": {
-    "aks": {
-      "command": "<path of binary aks-mcp>",
-      "args": [
-        "--transport", "stdio",
-        "--resource-id", "/subscriptions/your-subscription-id/resourceGroups/your-resource-group/providers/Microsoft.ContainerService/managedClusters/your-cluster-name"
-      ]
-    }
-  }
-}
-```
-
 ### GitHub Copilot Configuration in VS Code
 
 For GitHub Copilot in VS Code, configure the MCP server in your `.vscode/mcp.json` file:
@@ -68,8 +52,7 @@ For GitHub Copilot in VS Code, configure the MCP server in your `.vscode/mcp.jso
       "type": "stdio",
       "command": "<path of binary aks-mcp>",
       "args": [
-        "--aks-resource-id",
-        "/subscriptions/your-subscription-id/resourceGroups/your-resource-group/providers/Microsoft.ContainerService/managedClusters/your-cluster-name"
+        "--transport", "stdio"
       ]
     }
   }
@@ -82,10 +65,11 @@ Command line arguments:
 
 ```sh
 Usage of ./aks-mcp:
-  --access-level string      Access level for tools (read, readwrite, admin) (default "read")
-  --address string           Address to listen on when using transport SSE or streamable-http (default "localhost:8080")
-  --aks-resource-id string   AKS Resource ID (optional), set this when using single cluster mode
-  -t, --transport string     Transport type (stdio, sse or streamable-http) (default "stdio")
+      --access-level string   Access level (readonly, readwrite, admin) (default "readonly")
+      --host string           Host to listen for the server (only used with transport sse or streamable-http) (default "127.0.0.1")
+      --port int              Port to listen for the server (only used with transport sse or streamable-http) (default 8000)
+      --timeout int           Timeout for command execution in seconds, default is 600s (default 600)
+      --transport string      Transport mechanism to use (stdio, sse or streamable-http) (default "stdio")
 ```
 
 **Environment variables:**
