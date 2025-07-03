@@ -5,6 +5,8 @@ import (
 	"log"
 
 	"github.com/Azure/aks-mcp/internal/az"
+	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/aks-mcp/internal/azure/resourcehandlers"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
 	"github.com/Azure/aks-mcp/internal/version"
@@ -43,6 +45,9 @@ func (s *Service) Initialize() error {
 
 	// Register individual az commands
 	s.registerAzCommands()
+
+	// Register Azure resource tools (VNet, NSG, etc.)
+	s.registerAzureResourceTools()
 
 	return nil
 }
@@ -111,4 +116,43 @@ func (s *Service) registerAzCommands() {
 			s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 		}
 	}
+}
+
+func (s *Service) registerAzureResourceTools() {
+	// Create Azure client for the resource tools (cache is internal to the client)
+	azClient, err := azure.NewAzureClient(s.cfg)
+	if err != nil {
+		log.Printf("Warning: Failed to create Azure client: %v", err)
+		return
+	}
+
+	// Register Network-related tools
+	s.registerNetworkTools(azClient)
+
+	// TODO: Add other resource categories in the future:
+}
+
+// registerNetworkTools registers all network-related Azure resource tools
+func (s *Service) registerNetworkTools(azClient *azure.AzureClient) {
+	log.Println("Registering Network tools...")
+
+	// Register VNet info tool
+	log.Println("Registering network tool: get_vnet_info")
+	vnetTool := resourcehandlers.RegisterVNetInfoTool()
+	s.mcpServer.AddTool(vnetTool, tools.CreateResourceHandler(resourcehandlers.GetVNetInfoHandler(azClient, s.cfg), s.cfg))
+
+	// Register NSG info tool
+	log.Println("Registering network tool: get_nsg_info")
+	nsgTool := resourcehandlers.RegisterNSGInfoTool()
+	s.mcpServer.AddTool(nsgTool, tools.CreateResourceHandler(resourcehandlers.GetNSGInfoHandler(azClient, s.cfg), s.cfg))
+
+	// Register RouteTable info tool
+	log.Println("Registering network tool: get_route_table_info")
+	routeTableTool := resourcehandlers.RegisterRouteTableInfoTool()
+	s.mcpServer.AddTool(routeTableTool, tools.CreateResourceHandler(resourcehandlers.GetRouteTableInfoHandler(azClient, s.cfg), s.cfg))
+
+	// Register Subnet info tool
+	log.Println("Registering network tool: get_subnet_info")
+	subnetTool := resourcehandlers.RegisterSubnetInfoTool()
+	s.mcpServer.AddTool(subnetTool, tools.CreateResourceHandler(resourcehandlers.GetSubnetInfoHandler(azClient, s.cfg), s.cfg))
 }
