@@ -4,18 +4,14 @@ import (
 	"testing"
 )
 
-func stringPtr(s string) *string {
-	return &s
-}
-
 func TestExtractAKSParameters(t *testing.T) {
 	tests := []struct {
-		name           string
-		params         map[string]interface{}
-		expectedSubID  string
-		expectedRG     string
+		name            string
+		params          map[string]interface{}
+		expectedSubID   string
+		expectedRG      string
 		expectedCluster string
-		expectError    bool
+		expectError     bool
 	}{
 		{
 			name: "valid parameters",

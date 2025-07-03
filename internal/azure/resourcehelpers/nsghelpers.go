@@ -43,7 +43,7 @@ func GetNSGIDFromAKS(
 	subscriptionID := parsedSubnetID.SubscriptionID
 	resourceGroup := parsedSubnetID.ResourceGroupName
 	subnetName := parsedSubnetID.Name
-	
+
 	// Get VNet name from parent resource
 	var vnetName string
 	if parsedSubnetID.Parent != nil {

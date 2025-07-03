@@ -14,7 +14,7 @@ func TestGetVNetIDFromAKS(t *testing.T) {
 
 	t.Run("valid cluster with VnetSubnetID", func(t *testing.T) {
 		vnetSubnetID := "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.Network/virtualNetworks/myVNet/subnets/mySubnet"
-		
+
 		cluster := &armcontainerservice.ManagedCluster{
 			Properties: &armcontainerservice.ManagedClusterProperties{
 				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
@@ -92,7 +92,7 @@ func TestGetVNetIDFromAKS(t *testing.T) {
 
 	t.Run("cluster with invalid subnet ID format", func(t *testing.T) {
 		invalidSubnetID := "invalid-subnet-id"
-		
+
 		cluster := &armcontainerservice.ManagedCluster{
 			Properties: &armcontainerservice.ManagedClusterProperties{
 				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
@@ -116,7 +116,7 @@ func TestGetSubnetIDFromAKS(t *testing.T) {
 
 	t.Run("valid cluster with VnetSubnetID", func(t *testing.T) {
 		vnetSubnetID := "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.Network/virtualNetworks/myVNet/subnets/mySubnet"
-		
+
 		cluster := &armcontainerservice.ManagedCluster{
 			Properties: &armcontainerservice.ManagedClusterProperties{
 				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
@@ -153,7 +153,7 @@ func TestGetSubnetIDFromAKS(t *testing.T) {
 func TestParseResourceID(t *testing.T) {
 	t.Run("valid VNet resource ID", func(t *testing.T) {
 		resourceID := "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.Network/virtualNetworks/myVNet"
-		
+
 		parsedID, err := arm.ParseResourceID(resourceID)
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
@@ -178,7 +178,7 @@ func TestParseResourceID(t *testing.T) {
 
 	t.Run("valid subnet resource ID", func(t *testing.T) {
 		resourceID := "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.Network/virtualNetworks/myVNet/subnets/mySubnet"
-		
+
 		parsedID, err := arm.ParseResourceID(resourceID)
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
@@ -211,7 +211,7 @@ func TestParseResourceID(t *testing.T) {
 
 	t.Run("invalid resource ID", func(t *testing.T) {
 		resourceID := "invalid-resource-id"
-		
+
 		_, err := arm.ParseResourceID(resourceID)
 		if err == nil {
 			t.Error("Expected error for invalid resource ID")
@@ -220,7 +220,7 @@ func TestParseResourceID(t *testing.T) {
 
 	t.Run("empty resource ID", func(t *testing.T) {
 		resourceID := ""
-		
+
 		_, err := arm.ParseResourceID(resourceID)
 		if err == nil {
 			t.Error("Expected error for empty resource ID")
@@ -288,7 +288,7 @@ func TestGetRouteTableIDFromAKS(t *testing.T) {
 
 	t.Run("cluster with invalid subnet ID format", func(t *testing.T) {
 		invalidSubnetID := "invalid-subnet-id"
-		
+
 		cluster := &armcontainerservice.ManagedCluster{
 			Properties: &armcontainerservice.ManagedClusterProperties{
 				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{
@@ -366,7 +366,7 @@ func TestGetNSGIDFromAKS(t *testing.T) {
 
 	t.Run("cluster with invalid subnet ID format", func(t *testing.T) {
 		invalidSubnetID := "invalid-subnet-id"
-		
+
 		cluster := &armcontainerservice.ManagedCluster{
 			Properties: &armcontainerservice.ManagedClusterProperties{
 				AgentPoolProfiles: []*armcontainerservice.ManagedClusterAgentPoolProfile{

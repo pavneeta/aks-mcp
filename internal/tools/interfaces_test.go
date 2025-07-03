@@ -14,12 +14,12 @@ func TestResourceHandlerInterface(t *testing.T) {
 
 	cfg := config.NewConfig()
 	params := make(map[string]interface{})
-	
+
 	result, err := handler.Handle(params, cfg)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
-	
+
 	if result != "test result" {
 		t.Errorf("Expected 'test result', got: %s", result)
 	}
@@ -33,12 +33,12 @@ func TestCommandExecutorStillWorks(t *testing.T) {
 
 	cfg := config.NewConfig()
 	params := make(map[string]interface{})
-	
+
 	result, err := executor.Execute(params, cfg)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
-	
+
 	if result != "command result" {
 		t.Errorf("Expected 'command result', got: %s", result)
 	}
