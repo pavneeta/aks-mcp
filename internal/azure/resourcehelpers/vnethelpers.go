@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 )
 
@@ -31,12 +32,11 @@ func GetVNetIDFromAKS(
 				subnetID := *pool.VnetSubnetID
 
 				// Parse the subnet ID to extract the VNet ID
-				if parsed, err := azure.ParseResourceID(subnetID); err == nil && parsed.IsSubnet() {
-					// Construct the VNet ID from the subnet ID
-					vnetIDParts := strings.Split(subnetID, "/subnets/")
-					if len(vnetIDParts) > 0 {
-						vnetID := vnetIDParts[0]
-						return vnetID, nil
+				if parsed, err := arm.ParseResourceID(subnetID); err == nil {
+					// Check if this is a subnet resource
+					if parsed.ResourceType.String() == "Microsoft.Network/virtualNetworks/subnets" && parsed.Parent != nil {
+						// Return the parent VNet ID
+						return parsed.Parent.String(), nil
 					}
 				}
 				break

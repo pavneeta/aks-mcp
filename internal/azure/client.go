@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/Azure/aks-mcp/internal/config"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
@@ -260,23 +261,27 @@ func (c *AzureClient) GetSubnet(ctx context.Context, subscriptionID, resourceGro
 // It parses the ID, determines the resource type, and calls the appropriate method.
 func (c *AzureClient) GetResourceByID(ctx context.Context, resourceID string) (interface{}, error) {
 	// Parse the resource ID
-	parsed, err := ParseResourceID(resourceID)
+	parsed, err := arm.ParseResourceID(resourceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse resource ID: %v", err)
 	}
 
 	// Based on the resource type, call the appropriate method
-	switch parsed.ResourceType {
-	case ResourceTypeAKSCluster:
-		return c.GetAKSCluster(ctx, parsed.SubscriptionID, parsed.ResourceGroup, parsed.ResourceName)
-	case ResourceTypeVirtualNetwork:
-		return c.GetVirtualNetwork(ctx, parsed.SubscriptionID, parsed.ResourceGroup, parsed.ResourceName)
-	case ResourceTypeRouteTable:
-		return c.GetRouteTable(ctx, parsed.SubscriptionID, parsed.ResourceGroup, parsed.ResourceName)
-	case ResourceTypeSecurityGroup:
-		return c.GetNetworkSecurityGroup(ctx, parsed.SubscriptionID, parsed.ResourceGroup, parsed.ResourceName)
-	case ResourceTypeSubnet:
-		return c.GetSubnet(ctx, parsed.SubscriptionID, parsed.ResourceGroup, parsed.ResourceName, parsed.SubResourceName)
+	switch parsed.ResourceType.String() {
+	case "Microsoft.ContainerService/managedClusters":
+		return c.GetAKSCluster(ctx, parsed.SubscriptionID, parsed.ResourceGroupName, parsed.Name)
+	case "Microsoft.Network/virtualNetworks":
+		return c.GetVirtualNetwork(ctx, parsed.SubscriptionID, parsed.ResourceGroupName, parsed.Name)
+	case "Microsoft.Network/routeTables":
+		return c.GetRouteTable(ctx, parsed.SubscriptionID, parsed.ResourceGroupName, parsed.Name)
+	case "Microsoft.Network/networkSecurityGroups":
+		return c.GetNetworkSecurityGroup(ctx, parsed.SubscriptionID, parsed.ResourceGroupName, parsed.Name)
+	case "Microsoft.Network/virtualNetworks/subnets":
+		// For subnets, we need the VNet name from parent and subnet name
+		if parsed.Parent != nil {
+			return c.GetSubnet(ctx, parsed.SubscriptionID, parsed.ResourceGroupName, parsed.Parent.Name, parsed.Name)
+		}
+		return nil, fmt.Errorf("invalid subnet resource ID format: %s", resourceID)
 	default:
 		return nil, fmt.Errorf("unsupported resource type: %s", parsed.ResourceType)
 	}

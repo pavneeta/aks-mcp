@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 )
 
@@ -28,20 +29,28 @@ func GetRouteTableIDFromAKS(
 	}
 
 	// Parse subnet ID to get subscription, resource group, vnet name and subnet name
-	parsedSubnetID, err := azure.ParseResourceID(subnetID)
+	parsedSubnetID, err := arm.ParseResourceID(subnetID)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse subnet ID: %v", err)
 	}
 
-	if !parsedSubnetID.IsSubnet() {
+	// Check if this is a subnet resource
+	if parsedSubnetID.ResourceType.String() != "Microsoft.Network/virtualNetworks/subnets" {
 		return "", fmt.Errorf("invalid subnet ID format: %s", subnetID)
 	}
 
 	// Get the subscription ID from the subnet ID
 	subscriptionID := parsedSubnetID.SubscriptionID
-	resourceGroup := parsedSubnetID.ResourceGroup
-	vnetName := parsedSubnetID.ResourceName
-	subnetName := parsedSubnetID.SubResourceName
+	resourceGroup := parsedSubnetID.ResourceGroupName
+	subnetName := parsedSubnetID.Name
+	
+	// Get VNet name from parent resource
+	var vnetName string
+	if parsedSubnetID.Parent != nil {
+		vnetName = parsedSubnetID.Parent.Name
+	} else {
+		return "", fmt.Errorf("could not determine VNet name from subnet ID: %s", subnetID)
+	}
 
 	// Get subnet details to find attached route table
 	clients, err := client.GetOrCreateClientsForSubscription(subscriptionID)

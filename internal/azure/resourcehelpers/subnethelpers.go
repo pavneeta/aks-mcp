@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 )
 
@@ -29,7 +30,7 @@ func GetSubnetIDFromAKS(ctx context.Context, cluster *armcontainerservice.Manage
 	}
 
 	// Parse VNet ID to extract subscription, resource group, and name
-	vnetResourceID, err := azure.ParseResourceID(vnetID)
+	vnetResourceID, err := arm.ParseResourceID(vnetID)
 	if err != nil {
 		return "", fmt.Errorf("could not parse VNet ID: %v", err)
 	}
@@ -37,8 +38,8 @@ func GetSubnetIDFromAKS(ctx context.Context, cluster *armcontainerservice.Manage
 	// Get the VNet details to list subnets
 	vnet, err := client.GetVirtualNetwork(ctx,
 		vnetResourceID.SubscriptionID,
-		vnetResourceID.ResourceGroup,
-		vnetResourceID.ResourceName)
+		vnetResourceID.ResourceGroupName,
+		vnetResourceID.Name)
 	if err != nil {
 		return "", fmt.Errorf("could not get VNet details: %v", err)
 	}
