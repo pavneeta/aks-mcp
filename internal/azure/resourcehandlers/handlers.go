@@ -22,19 +22,9 @@ import (
 func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
-		subID, ok := params["subscription_id"].(string)
-		if !ok || subID == "" {
-			return "", fmt.Errorf("missing or invalid subscription_id parameter")
-		}
-
-		rg, ok := params["resource_group"].(string)
-		if !ok || rg == "" {
-			return "", fmt.Errorf("missing or invalid resource_group parameter")
-		}
-
-		clusterName, ok := params["cluster_name"].(string)
-		if !ok || clusterName == "" {
-			return "", fmt.Errorf("missing or invalid cluster_name parameter")
+		subID, rg, clusterName, err := ExtractAKSParameters(params)
+		if err != nil {
+			return "", err
 		}
 
 		// Get the cluster details
@@ -75,19 +65,9 @@ func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools
 func GetNSGInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
-		subID, ok := params["subscription_id"].(string)
-		if !ok || subID == "" {
-			return "", fmt.Errorf("missing or invalid subscription_id parameter")
-		}
-
-		rg, ok := params["resource_group"].(string)
-		if !ok || rg == "" {
-			return "", fmt.Errorf("missing or invalid resource_group parameter")
-		}
-
-		clusterName, ok := params["cluster_name"].(string)
-		if !ok || clusterName == "" {
-			return "", fmt.Errorf("missing or invalid cluster_name parameter")
+		subID, rg, clusterName, err := ExtractAKSParameters(params)
+		if err != nil {
+			return "", err
 		}
 
 		// Get the cluster details
@@ -128,19 +108,9 @@ func GetNSGInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.
 func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
-		subID, ok := params["subscription_id"].(string)
-		if !ok || subID == "" {
-			return "", fmt.Errorf("missing or invalid subscription_id parameter")
-		}
-
-		rg, ok := params["resource_group"].(string)
-		if !ok || rg == "" {
-			return "", fmt.Errorf("missing or invalid resource_group parameter")
-		}
-
-		clusterName, ok := params["cluster_name"].(string)
-		if !ok || clusterName == "" {
-			return "", fmt.Errorf("missing or invalid cluster_name parameter")
+		subID, rg, clusterName, err := ExtractAKSParameters(params)
+		if err != nil {
+			return "", err
 		}
 
 		// Get the cluster details
@@ -195,19 +165,9 @@ func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData)
 func GetSubnetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
-		subID, ok := params["subscription_id"].(string)
-		if !ok || subID == "" {
-			return "", fmt.Errorf("missing or invalid subscription_id parameter")
-		}
-
-		rg, ok := params["resource_group"].(string)
-		if !ok || rg == "" {
-			return "", fmt.Errorf("missing or invalid resource_group parameter")
-		}
-
-		clusterName, ok := params["cluster_name"].(string)
-		if !ok || clusterName == "" {
-			return "", fmt.Errorf("missing or invalid cluster_name parameter")
+		subID, rg, clusterName, err := ExtractAKSParameters(params)
+		if err != nil {
+			return "", err
 		}
 
 		// Get the cluster details
@@ -247,6 +207,26 @@ func GetSubnetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) too
 // =============================================================================
 // Shared Helper Functions
 // =============================================================================
+
+// ExtractAKSParameters extracts and validates the common AKS parameters from the params map
+func ExtractAKSParameters(params map[string]interface{}) (subscriptionID, resourceGroup, clusterName string, err error) {
+	subID, ok := params["subscription_id"].(string)
+	if !ok || subID == "" {
+		return "", "", "", fmt.Errorf("missing or invalid subscription_id parameter")
+	}
+
+	rg, ok := params["resource_group"].(string)
+	if !ok || rg == "" {
+		return "", "", "", fmt.Errorf("missing or invalid resource_group parameter")
+	}
+
+	clusterNameParam, ok := params["cluster_name"].(string)
+	if !ok || clusterNameParam == "" {
+		return "", "", "", fmt.Errorf("missing or invalid cluster_name parameter")
+	}
+
+	return subID, rg, clusterNameParam, nil
+}
 
 // GetClusterDetails gets the details of an AKS cluster
 func GetClusterDetails(ctx context.Context, client *azure.AzureClient, subscriptionID, resourceGroup, clusterName string) (*armcontainerservice.ManagedCluster, error) {
