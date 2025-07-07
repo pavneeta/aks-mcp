@@ -52,4 +52,4 @@ ENV HOME=/home/mcp
 
 # Command to run
 ENTRYPOINT ["/usr/local/bin/aks-mcp"]
-CMD ["--transport", "sse", "--host", "0.0.0.0"]
+CMD ["--transport", "streamable-http", "--host", "0.0.0.0"]
