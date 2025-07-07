@@ -1,99 +1,236 @@
 package main
 
 import (
-	"github.com/Azure/aks-mcp/internal/config"
-	"github.com/Azure/aks-mcp/internal/server"
+	"context"
+	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
 	"time"
 )
 
-// TestContainerTransportConfiguration validates that the transport configuration
-// is appropriate for container deployment
-func TestContainerTransportConfiguration(t *testing.T) {
-	// Test that sse transport works
-	cfg := config.NewConfig()
-	cfg.Transport = "sse"
-	cfg.Host = "0.0.0.0"
-	cfg.Port = 8000
-
-	service := server.NewService(cfg)
-	err := service.Initialize()
-	if err != nil {
-		t.Fatalf("Failed to initialize service with sse transport: %v", err)
+// TestContainerBuild validates that the Docker image builds successfully
+// This test requires Docker to be available and working
+func TestContainerBuild(t *testing.T) {
+	// Skip if running in CI or if Docker not available
+	if os.Getenv("CI") == "true" {
+		t.Skip("Skipping Docker build test in CI environment")
 	}
-
-	// Test that streamable-http transport works
-	cfg.Transport = "streamable-http"
-	service = server.NewService(cfg)
-	err = service.Initialize()
-	if err != nil {
-		t.Fatalf("Failed to initialize service with streamable-http transport: %v", err)
+	
+	// Check if docker is available
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("Docker not available, skipping container build test")
 	}
+	
+	// Build the Docker image from repository root
+	cmd := exec.Command("docker", "build", "-t", "aks-mcp:test", "../..")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to build Docker image: %v\nOutput: %s", err, string(output))
+	}
+	t.Logf("Docker image built successfully")
 }
 
-// TestAzureCLIAvailability tests that Azure CLI would be available
-// This simulates what would happen in the container environment
-func TestAzureCLIAvailability(t *testing.T) {
-	// Check if az command would be found in PATH
-	// In container, this would be installed via pip3 install azure-cli
-	_, err := exec.LookPath("az")
-
-	// If az is not found locally, that's expected - we just want to
-	// verify our container setup logic would work
-	if err != nil {
-		t.Logf("Azure CLI not found locally (expected): %v", err)
-		t.Logf("In container, Azure CLI would be installed via: pip3 install --break-system-packages azure-cli")
-	} else {
-		t.Logf("Azure CLI found locally")
-
-		// If available, test that it works
-		cmd := exec.Command("az", "--version")
-		output, err := cmd.Output()
-		if err != nil {
-			t.Logf("Azure CLI version check failed: %v", err)
-		} else {
-			t.Logf("Azure CLI version: %s", strings.TrimSpace(string(output)))
-		}
+// TestContainerAzureCLI validates Azure CLI is available inside the container
+// This test assumes the Docker image 'aks-mcp:test' exists
+func TestContainerAzureCLI(t *testing.T) {
+	// Skip if running in CI environment unless image is pre-built
+	if !isDockerImageAvailable("aks-mcp:test") {
+		t.Skip("Docker image 'aks-mcp:test' not available, skipping Azure CLI test")
 	}
+	
+	// Check Azure CLI is installed in container
+	cmd := exec.Command("docker", "run", "--rm", "aks-mcp:test", "sh", "-c", "which az && az --version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Azure CLI not available in container: %v\nOutput: %s", err, string(output))
+	}
+	
+	outputStr := string(output)
+	if !strings.Contains(outputStr, "/usr/local/bin/az") && !strings.Contains(outputStr, "/usr/bin/az") {
+		t.Fatalf("Azure CLI not found in expected location. Output: %s", outputStr)
+	}
+	
+	if !strings.Contains(outputStr, "azure-cli") {
+		t.Fatalf("Azure CLI version not displayed properly. Output: %s", outputStr)
+	}
+	
+	t.Logf("Azure CLI successfully installed in container")
 }
 
-// TestNetworkTransportStartup tests that network transports start correctly
-func TestNetworkTransportStartup(t *testing.T) {
-	// Test SSE transport startup
-	go func() {
-		cfg := config.NewConfig()
-		cfg.Transport = "sse"
-		cfg.Host = "127.0.0.1"
-		cfg.Port = 8999 // Use different port to avoid conflicts
-
-		service := server.NewService(cfg)
-		if err := service.Initialize(); err != nil {
-			t.Logf("Failed to initialize service: %v", err)
-			return
-		}
-
-		// Start service (this will block)
-		if err := service.Run(); err != nil {
-			t.Logf("Failed to run service: %v", err)
+// TestContainerNetworkTransport validates the container starts with correct transport and network configuration
+func TestContainerNetworkTransport(t *testing.T) {
+	// Skip if Docker image not available
+	if !isDockerImageAvailable("aks-mcp:test") {
+		t.Skip("Docker image 'aks-mcp:test' not available, skipping network transport test")
+	}
+	
+	// Start container with default CMD (streamable-http transport)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	
+	// Start container in background
+	cmd := exec.CommandContext(ctx, "docker", "run", "--rm", "-p", "8000:8000", "aks-mcp:test")
+	
+	// Start the container
+	err := cmd.Start()
+	if err != nil {
+		t.Fatalf("Failed to start container: %v", err)
+	}
+	
+	// Ensure container is stopped when test completes
+	defer func() {
+		if cmd.Process != nil {
+			_ = cmd.Process.Kill()
 		}
 	}()
-
-	// Give server time to start
-	time.Sleep(2 * time.Second)
-
-	// Try to connect to the SSE endpoint
-	resp, err := http.Get("http://127.0.0.1:8999")
+	
+	// Give container time to start
+	time.Sleep(5 * time.Second)
+	
+	// Try to connect to the streamable-http endpoint
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get("http://localhost:8000")
 	if err != nil {
-		t.Logf("Could not connect to SSE server (expected in test environment): %v", err)
-	} else {
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				t.Logf("Error closing response body: %v", err)
-			}
-		}()
-		t.Logf("SSE server is accessible")
+		t.Fatalf("Could not connect to container service: %v", err)
 	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Logf("Error closing response body: %v", err)
+		}
+	}()
+	
+	// Read a small amount of response to verify service is responding
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	if err != nil {
+		t.Fatalf("Failed to read response: %v", err)
+	}
+	
+	t.Logf("Container service is accessible at localhost:8000, status: %d", resp.StatusCode)
+	t.Logf("Response preview: %s", string(body)[:min(len(body), 100)])
+}
+
+// TestContainerConfiguration validates container environment and configuration
+func TestContainerConfiguration(t *testing.T) {
+	// Skip if Docker image not available
+	if !isDockerImageAvailable("aks-mcp:test") {
+		t.Skip("Docker image 'aks-mcp:test' not available, skipping configuration test")
+	}
+	
+	// Test container has correct user and working directory
+	cmd := exec.Command("docker", "run", "--rm", "aks-mcp:test", "sh", "-c", "whoami && pwd && echo $HOME")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to check container configuration: %v\nOutput: %s", err, string(output))
+	}
+	
+	outputStr := string(output)
+	lines := strings.Split(strings.TrimSpace(outputStr), "\n")
+	
+	if len(lines) < 3 {
+		t.Fatalf("Unexpected output format: %s", outputStr)
+	}
+	
+	user := strings.TrimSpace(lines[0])
+	workDir := strings.TrimSpace(lines[1])
+	homeDir := strings.TrimSpace(lines[2])
+	
+	if user != "mcp" {
+		t.Errorf("Expected user 'mcp', got '%s'", user)
+	}
+	
+	if workDir != "/home/mcp" {
+		t.Errorf("Expected working directory '/home/mcp', got '%s'", workDir)
+	}
+	
+	if homeDir != "/home/mcp" {
+		t.Errorf("Expected HOME directory '/home/mcp', got '%s'", homeDir)
+	}
+	
+	t.Logf("Container configuration correct: user=%s, workdir=%s, home=%s", user, workDir, homeDir)
+}
+
+// TestContainerHelp validates the application responds to help command
+func TestContainerHelp(t *testing.T) {
+	// Skip if Docker image not available
+	if !isDockerImageAvailable("aks-mcp:test") {
+		t.Skip("Docker image 'aks-mcp:test' not available, skipping help test")
+	}
+	
+	cmd := exec.Command("docker", "run", "--rm", "aks-mcp:test", "--help")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Help command failed: %v\nOutput: %s", err, string(output))
+	}
+	
+	outputStr := string(output)
+	if !strings.Contains(outputStr, "transport") || !strings.Contains(outputStr, "host") {
+		t.Fatalf("Help output doesn't contain expected flags. Output: %s", outputStr)
+	}
+	
+	t.Logf("Container help command works correctly")
+}
+
+// TestDockerfileConfiguration validates the Dockerfile configuration without building
+func TestDockerfileConfiguration(t *testing.T) {
+	// Read and validate Dockerfile content
+	dockerfile, err := os.ReadFile("../../Dockerfile")
+	if err != nil {
+		t.Fatalf("Failed to read Dockerfile: %v", err)
+	}
+	
+	content := string(dockerfile)
+	
+	// Validate Azure CLI installation
+	if !strings.Contains(content, "pip3 install --break-system-packages azure-cli") {
+		t.Error("Dockerfile missing Azure CLI installation")
+	}
+	
+	// Validate required packages for Azure CLI
+	if !strings.Contains(content, "gcc python3-dev musl-dev linux-headers") {
+		t.Error("Dockerfile missing build dependencies for Azure CLI")
+	}
+	
+	// Validate transport configuration
+	if !strings.Contains(content, "streamable-http") {
+		t.Error("Dockerfile not using streamable-http transport")
+	}
+	
+	// Validate network binding
+	if !strings.Contains(content, "0.0.0.0") {
+		t.Error("Dockerfile not binding to all network interfaces")
+	}
+	
+	// Validate port exposure
+	if !strings.Contains(content, "EXPOSE 8000") {
+		t.Error("Dockerfile not exposing port 8000")
+	}
+	
+	// Validate user configuration
+	if !strings.Contains(content, "USER mcp") {
+		t.Error("Dockerfile not using non-root user")
+	}
+	
+	t.Logf("Dockerfile configuration validated successfully")
+}
+
+// isDockerImageAvailable checks if a Docker image is available locally
+func isDockerImageAvailable(imageName string) bool {
+	if _, err := exec.LookPath("docker"); err != nil {
+		return false
+	}
+	
+	cmd := exec.Command("docker", "image", "inspect", imageName)
+	err := cmd.Run()
+	return err == nil
+}
+
+// min returns the smaller of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
