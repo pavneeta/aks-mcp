@@ -75,6 +75,72 @@ Usage of ./aks-mcp:
 **Environment variables:**
 - Standard Azure authentication environment variables are supported (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`)
 
+## Development
+
+### Building from Source
+
+This project includes a Makefile for convenient development, building, and testing. To see all available targets:
+
+```bash
+make help
+```
+
+#### Quick Start
+
+```bash
+# Build the binary
+make build
+
+# Run tests
+make test
+
+# Run tests with coverage
+make test-coverage
+
+# Format and lint code
+make check
+
+# Build for all platforms
+make release
+```
+
+#### Common Development Tasks
+
+```bash
+# Install dependencies
+make deps
+
+# Build and run with --help
+make run
+
+# Clean build artifacts
+make clean
+
+# Install binary to GOBIN
+make install
+
+# Run security scan
+make security
+```
+
+#### Docker
+
+```bash
+# Build Docker image
+make docker-build
+
+# Run Docker container
+make docker-run
+```
+
+### Manual Build
+
+If you prefer to build without the Makefile:
+
+```bash
+go build -o aks-mcp ./cmd/aks-mcp
+```
+
 ## Usage
 
 Ask any questions about your AKS clusters in your AI client, for example:
