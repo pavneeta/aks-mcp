@@ -23,19 +23,16 @@ func GetLoadBalancerIDsFromAKS(
 
 	// Get subscription ID and node resource group
 	subscriptionID := getSubscriptionFromCluster(cluster)
+	if subscriptionID == "" {
+		return nil, fmt.Errorf("unable to extract subscription ID from cluster")
+	}
 	if cluster.Properties.NodeResourceGroup == nil {
 		return nil, fmt.Errorf("node resource group not found for AKS cluster")
 	}
 	nodeResourceGroup := *cluster.Properties.NodeResourceGroup
 
-	// Get cluster name for naming convention matching
-	clusterName := ""
-	if cluster.Name != nil {
-		clusterName = *cluster.Name
-	}
-
 	// Look for load balancers in the node resource group
-	return findLoadBalancersInNodeResourceGroup(ctx, client, subscriptionID, nodeResourceGroup, clusterName)
+	return findLoadBalancersInNodeResourceGroup(ctx, client, subscriptionID, nodeResourceGroup)
 }
 
 // findLoadBalancersInNodeResourceGroup looks for all load balancers in the node resource group
@@ -47,7 +44,6 @@ func findLoadBalancersInNodeResourceGroup(
 	client *azure.AzureClient,
 	subscriptionID string,
 	nodeResourceGroup string,
-	clusterName string,
 ) ([]string, error) {
 	// Get clients for the subscription
 	clients, err := client.GetOrCreateClientsForSubscription(subscriptionID)

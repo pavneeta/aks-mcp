@@ -32,8 +32,31 @@ func TestGetLoadBalancerIDsFromAKS_Comprehensive(t *testing.T) {
 			expectSuccess: false,
 		},
 		{
+			name: "cluster with nil ID",
+			cluster: &armcontainerservice.ManagedCluster{
+				ID: nil,
+				Properties: &armcontainerservice.ManagedClusterProperties{
+					NodeResourceGroup: stringPtr("MC_myRG_myCluster_eastus"),
+				},
+			},
+			expectedError: "unable to extract subscription ID from cluster",
+			expectSuccess: false,
+		},
+		{
+			name: "cluster with malformed ID",
+			cluster: &armcontainerservice.ManagedCluster{
+				ID: stringPtr("invalid-cluster-id"),
+				Properties: &armcontainerservice.ManagedClusterProperties{
+					NodeResourceGroup: stringPtr("MC_myRG_myCluster_eastus"),
+				},
+			},
+			expectedError: "unable to extract subscription ID from cluster",
+			expectSuccess: false,
+		},
+		{
 			name: "cluster with nil node resource group",
 			cluster: &armcontainerservice.ManagedCluster{
+				ID: stringPtr("/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.ContainerService/managedClusters/myCluster"),
 				Properties: &armcontainerservice.ManagedClusterProperties{
 					NodeResourceGroup: nil,
 				},
@@ -44,6 +67,7 @@ func TestGetLoadBalancerIDsFromAKS_Comprehensive(t *testing.T) {
 		{
 			name: "cluster with empty node resource group",
 			cluster: &armcontainerservice.ManagedCluster{
+				ID: stringPtr("/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.ContainerService/managedClusters/myCluster"),
 				Properties: &armcontainerservice.ManagedClusterProperties{
 					NodeResourceGroup: stringPtr(""),
 				},
