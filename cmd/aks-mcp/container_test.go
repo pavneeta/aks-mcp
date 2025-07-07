@@ -70,10 +70,15 @@ func TestNetworkTransportStartup(t *testing.T) {
 		cfg.Port = 8999 // Use different port to avoid conflicts
 
 		service := server.NewService(cfg)
-		service.Initialize()
+		if err := service.Initialize(); err != nil {
+			t.Logf("Failed to initialize service: %v", err)
+			return
+		}
 
 		// Start service (this will block)
-		service.Run()
+		if err := service.Run(); err != nil {
+			t.Logf("Failed to run service: %v", err)
+		}
 	}()
 
 	// Give server time to start
@@ -84,7 +89,11 @@ func TestNetworkTransportStartup(t *testing.T) {
 	if err != nil {
 		t.Logf("Could not connect to SSE server (expected in test environment): %v", err)
 	} else {
-		resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 		t.Logf("SSE server is accessible")
 	}
 }
