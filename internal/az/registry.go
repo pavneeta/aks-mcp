@@ -73,8 +73,8 @@ func GetReadOnlyAzCommands() []AksCommand {
 		// {Name: "az aks addon show", Description: "Show details of an addon in a managed Kubernetes cluster", ArgsExample: "--name myAKSCluster --resource-group myResourceGroup --addon monitoring"},
 
 		// Nodepool information commands
-		// {Name: "az aks nodepool list", Description: "List node pools in a managed Kubernetes cluster", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup"},
-		// {Name: "az aks nodepool show", Description: "Show the details for a node pool in the managed Kubernetes cluster", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup --name nodepool1"},
+		{Name: "az aks nodepool list", Description: "List node pools in a managed Kubernetes cluster", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup"},
+		{Name: "az aks nodepool show", Description: "Show the details for a node pool in the managed Kubernetes cluster", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup --name nodepool1"},
 		// {Name: "az aks nodepool get-upgrades", Description: "Get the available upgrade versions for an agent pool of the managed Kubernetes cluster", ArgsExample: "--cluster-name myAKSCluster --resource-group myResourceGroup --name nodepool1"},
 
 		// Operations and snapshot commands
