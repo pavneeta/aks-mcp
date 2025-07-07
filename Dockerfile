@@ -22,8 +22,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o aks-mcp ./cmd/aks-mcp
 # Runtime stage
 FROM alpine:3.22
 
-# Install required packages for kubectl and helm
-RUN apk add --no-cache curl bash openssl ca-certificates git python3 py3-pip
+# Install required packages for kubectl and helm, plus build tools for Azure CLI
+RUN apk add --no-cache curl bash openssl ca-certificates git python3 py3-pip \
+    gcc python3-dev musl-dev linux-headers
 
 # Install Azure CLI
 RUN pip3 install --break-system-packages azure-cli
