@@ -10,9 +10,10 @@ This folder includes all the prompts for the AKS-MCP server. These prompt files 
 - **`README.md`** - This file, describing the prompts folder and its contents
 - **`monitoringservice.md`** - Feature requirements and implementation details for MCP monitoring service integration
 - **`azure-diagnostics.md`** - Implementation specifications for Azure diagnostic and advisory tools (AppLens detectors, Resource Health, Azure Advisor)
-- **`azure-cli-tools.md`** - Azure CLI (az aks) tools integration feature documentation
-- **`azure-network-tools.md`** - AKS resource information tools (VNet, NSG, Route Table, Subnet, Load Balancer) documentation
-- **`azure-resource-caching.md`** - Azure resource caching system feature documentation
+- **`azure-advisor.md`** - Simplified implementation specifications for Azure Advisor recommendations integration
+- **`azure-cli-tools.md`** - Azure CLI tools integration and command execution specifications
+- **`azure-network-tools.md`** - Azure network resource tools and information retrieval specifications
+- **`azure-resource-caching.md`** - Azure resource caching system implementation specifications
 
 ### File Structure
 
@@ -20,10 +21,11 @@ This folder includes all the prompts for the AKS-MCP server. These prompt files 
 prompts/
 ├── README.md                    # This documentation file
 ├── monitoringservice.md        # Monitoring service integration requirements
-└── azure-diagnostics.md        # Azure diagnostics and advisory tools specifications
-├── azure-cli-tools.md          # Azure CLI tools integration documentation
-├── azure-network-tools.md      # AKS network information tools documentation
-└── azure-resource-caching.md   # Azure resource caching system documentation
+├── azure-diagnostics.md        # Azure diagnostics and advisory tools specifications
+├── azure-advisor.md            # Azure Advisor recommendations integration
+├── azure-cli-tools.md          # Azure CLI tools integration specifications
+├── azure-network-tools.md      # Azure network resource tools specifications
+└── azure-resource-caching.md   # Azure resource caching system specifications
 ```
 
 ## AKS-MCP Server Capabilities
@@ -76,7 +78,7 @@ The prompts in this folder are designed to test and validate the following AKS-M
 ### Diagnostics and Advisory
 - AppLens detector integration and execution
 - Resource Health event monitoring and access
-- Azure Advisor recommendations retrieval
+- Azure Advisor recommendations retrieval (simplified implementation in azure-advisor.md)
 - Automated diagnostic workflows and reporting
 - Proactive issue detection and remediation guidance
 
