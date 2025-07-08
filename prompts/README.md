@@ -9,13 +9,15 @@ This folder includes all the prompts for the AKS-MCP server. These prompt files 
 
 - **`README.md`** - This file, describing the prompts folder and its contents
 - **`monitoringservice.md`** - Feature requirements and implementation details for MCP monitoring service integration
+- **`azure-diagnostics.md`** - Implementation specifications for Azure diagnostic and advisory tools (AppLens detectors, Resource Health, Azure Advisor)
 
 ### File Structure
 
 ```
 prompts/
 ├── README.md                    # This documentation file
-└── monitoringservice.md        # Monitoring service integration requirements
+├── monitoringservice.md        # Monitoring service integration requirements
+└── azure-diagnostics.md        # Azure diagnostics and advisory tools specifications
 ```
 
 ## AKS-MCP Server Capabilities
@@ -42,6 +44,13 @@ The prompts in this folder are designed to test and validate the following AKS-M
 - Alert management and notification systems
 - Performance metrics collection and analysis
 - Real-time monitoring and data visualization
+
+### Diagnostics and Advisory
+- AppLens detector integration and execution
+- Resource Health event monitoring and access
+- Azure Advisor recommendations retrieval
+- Automated diagnostic workflows and reporting
+- Proactive issue detection and remediation guidance
 
 ### Security and Access Control
 - Access level validation (readonly, readwrite, admin)
