@@ -42,7 +42,7 @@ func TestContainerAzureCLI(t *testing.T) {
 	}
 	
 	// Check Azure CLI is installed in container
-	cmd := exec.Command("docker", "run", "--rm", "aks-mcp:test", "sh", "-c", "which az && az --version")
+	cmd := exec.Command("docker", "run", "--rm", "--entrypoint", "sh", "aks-mcp:test", "-c", "which az && az --version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Azure CLI not available in container: %v\nOutput: %s", err, string(output))
@@ -120,7 +120,7 @@ func TestContainerConfiguration(t *testing.T) {
 	}
 	
 	// Test container has correct user and working directory
-	cmd := exec.Command("docker", "run", "--rm", "aks-mcp:test", "sh", "-c", "whoami && pwd && echo $HOME")
+	cmd := exec.Command("docker", "run", "--rm", "--entrypoint", "sh", "aks-mcp:test", "-c", "whoami && pwd && echo $HOME")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to check container configuration: %v\nOutput: %s", err, string(output))
