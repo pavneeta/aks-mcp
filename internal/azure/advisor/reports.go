@@ -385,7 +385,6 @@ func generateImplementationTimeline(report AKSAdvisorReport) []TimelineItem {
 			Focus:             "Medium Priority Items",
 			EstimatedHours:    len(mediumPriorityIDs) * 2,
 		})
-		week++
 	}
 
 	return timeline
