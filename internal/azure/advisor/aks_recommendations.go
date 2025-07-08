@@ -40,15 +40,14 @@ func handleAKSAdvisorRecommendationList(params map[string]interface{}, cfg *conf
 	resourceGroup, _ := params["resource_group"].(string)
 	category, _ := params["category"].(string)
 	severity, _ := params["severity"].(string)
-	
+
 	// Get cluster names filter if provided
 	var clusterNames []string
-	if clusterNamesParam, ok := params["cluster_names"]; ok {
-		if clusterNamesSlice, ok := clusterNamesParam.([]interface{}); ok {
-			for _, name := range clusterNamesSlice {
-				if nameStr, ok := name.(string); ok {
-					clusterNames = append(clusterNames, nameStr)
-				}
+	if clusterNamesParam, ok := params["cluster_names"].(string); ok && clusterNamesParam != "" {
+		// Parse comma-separated string into slice
+		for _, name := range strings.Split(clusterNamesParam, ",") {
+			if trimmedName := strings.TrimSpace(name); trimmedName != "" {
+				clusterNames = append(clusterNames, trimmedName)
 			}
 		}
 	}
@@ -151,10 +150,10 @@ func handleAKSAdvisorRecommendationReport(params map[string]interface{}, cfg *co
 // listRecommendationsViaCLI executes Azure CLI command to list recommendations
 func listRecommendationsViaCLI(subscriptionID, resourceGroup, category string, cfg *config.ConfigData) ([]CLIRecommendation, error) {
 	executor := az.NewExecutor()
-	
+
 	// Build command arguments
 	args := []string{"advisor", "recommendation", "list", "--subscription", subscriptionID, "--output", "json"}
-	
+
 	if resourceGroup != "" {
 		args = append(args, "--resource-group", resourceGroup)
 	}
@@ -185,10 +184,10 @@ func listRecommendationsViaCLI(subscriptionID, resourceGroup, category string, c
 // getRecommendationDetailsViaCLI gets details for a specific recommendation
 func getRecommendationDetailsViaCLI(recommendationID string, cfg *config.ConfigData) (*CLIRecommendation, error) {
 	executor := az.NewExecutor()
-	
+
 	// Build command
 	args := []string{"advisor", "recommendation", "show", "--recommendation-id", recommendationID, "--output", "json"}
-	
+
 	// Create command parameters
 	cmdParams := map[string]interface{}{
 		"command": "az " + strings.Join(args, " "),
@@ -282,10 +281,10 @@ func convertToAKSRecommendationSummaries(recommendations []CLIRecommendation) []
 func convertToAKSRecommendationSummary(rec CLIRecommendation) AKSRecommendationSummary {
 	clusterName := extractAKSClusterNameFromCLI(rec.Properties.ImpactedValue)
 	resourceGroup := extractResourceGroupFromResourceID(rec.Properties.ImpactedValue)
-	
+
 	// Parse last updated time
 	lastUpdated, _ := time.Parse(time.RFC3339, rec.Properties.LastUpdated)
-	
+
 	return AKSRecommendationSummary{
 		ID:               rec.ID,
 		Category:         rec.Properties.Category,
@@ -334,20 +333,20 @@ func mapCategoryToConfigArea(category string) string {
 func generateAKSAdvisorReport(subscriptionID string, recommendations []AKSRecommendationSummary, format string) AKSAdvisorReport {
 	// Generate summary statistics
 	summary := generateReportSummary(recommendations)
-	
+
 	// Generate action items based on priority
 	actionItems := generateActionItems(recommendations)
-	
+
 	// Group recommendations by cluster
 	clusterBreakdown := groupRecommendationsByCluster(recommendations)
-	
+
 	return AKSAdvisorReport{
-		SubscriptionID:    subscriptionID,
-		GeneratedAt:       time.Now(),
-		Summary:           summary,
-		Recommendations:   recommendations,
-		ActionItems:       actionItems,
-		ClusterBreakdown:  clusterBreakdown,
+		SubscriptionID:   subscriptionID,
+		GeneratedAt:      time.Now(),
+		Summary:          summary,
+		Recommendations:  recommendations,
+		ActionItems:      actionItems,
+		ClusterBreakdown: clusterBreakdown,
 	}
 }
 
@@ -356,7 +355,7 @@ func generateReportSummary(recommendations []AKSRecommendationSummary) AKSReport
 	byCategory := make(map[string]int)
 	bySeverity := make(map[string]int)
 	clustersMap := make(map[string]bool)
-	
+
 	for _, rec := range recommendations {
 		byCategory[rec.Category]++
 		bySeverity[rec.Severity]++
@@ -364,12 +363,12 @@ func generateReportSummary(recommendations []AKSRecommendationSummary) AKSReport
 			clustersMap[rec.ClusterName] = true
 		}
 	}
-	
+
 	return AKSReportSummary{
 		TotalRecommendations: len(recommendations),
-		ByCategory:          byCategory,
-		BySeverity:          bySeverity,
-		ClustersAffected:    len(clustersMap),
+		ByCategory:           byCategory,
+		BySeverity:           bySeverity,
+		ClustersAffected:     len(clustersMap),
 	}
 }
 
@@ -377,26 +376,26 @@ func generateReportSummary(recommendations []AKSRecommendationSummary) AKSReport
 func generateActionItems(recommendations []AKSRecommendationSummary) []AKSActionItem {
 	var actionItems []AKSActionItem
 	priority := 1
-	
+
 	// Sort by severity (High > Medium > Low)
 	highPriority := filterRecommendationsBySeverity(recommendations, "High")
 	mediumPriority := filterRecommendationsBySeverity(recommendations, "Medium")
 	lowPriority := filterRecommendationsBySeverity(recommendations, "Low")
-	
+
 	// Create action items in priority order
 	for _, rec := range append(append(highPriority, mediumPriority...), lowPriority...) {
 		actionItems = append(actionItems, AKSActionItem{
-			Priority:            priority,
-			RecommendationID:    rec.ID,
-			ClusterName:         rec.ClusterName,
-			Category:            rec.Category,
-			Description:         rec.Description,
-			EstimatedEffort:     mapSeverityToEffort(rec.Severity),
-			PotentialImpact:     rec.Severity,
+			Priority:         priority,
+			RecommendationID: rec.ID,
+			ClusterName:      rec.ClusterName,
+			Category:         rec.Category,
+			Description:      rec.Description,
+			EstimatedEffort:  mapSeverityToEffort(rec.Severity),
+			PotentialImpact:  rec.Severity,
 		})
 		priority++
 	}
-	
+
 	return actionItems
 }
 
@@ -429,14 +428,14 @@ func mapSeverityToEffort(severity string) string {
 func groupRecommendationsByCluster(recommendations []AKSRecommendationSummary) []ClusterRecommendations {
 	clusterMap := make(map[string][]AKSRecommendationSummary)
 	rgMap := make(map[string]string)
-	
+
 	for _, rec := range recommendations {
 		if rec.ClusterName != "" {
 			clusterMap[rec.ClusterName] = append(clusterMap[rec.ClusterName], rec)
 			rgMap[rec.ClusterName] = rec.ResourceGroup
 		}
 	}
-	
+
 	var clusterBreakdown []ClusterRecommendations
 	for clusterName, recs := range clusterMap {
 		clusterBreakdown = append(clusterBreakdown, ClusterRecommendations{
@@ -445,6 +444,6 @@ func groupRecommendationsByCluster(recommendations []AKSRecommendationSummary) [
 			Recommendations: recs,
 		})
 	}
-	
+
 	return clusterBreakdown
 }

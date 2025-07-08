@@ -14,8 +14,8 @@ type AKSRecommendationSummary struct {
 	ImpactedResource string                   `json:"impacted_resource"`
 	Description      string                   `json:"description"`
 	Severity         string                   `json:"severity"`
-	PotentialSavings *CostSavings            `json:"potential_savings,omitempty"`
-	LastUpdated      time.Time               `json:"last_updated"`
+	PotentialSavings *CostSavings             `json:"potential_savings,omitempty"`
+	LastUpdated      time.Time                `json:"last_updated"`
 	Status           string                   `json:"status"`
 	AKSSpecific      AKSRecommendationDetails `json:"aks_specific"`
 }
@@ -37,32 +37,32 @@ type CostSavings struct {
 
 // AKSAdvisorReport represents a comprehensive report of AKS recommendations
 type AKSAdvisorReport struct {
-	SubscriptionID    string                     `json:"subscription_id"`
-	GeneratedAt       time.Time                  `json:"generated_at"`
-	Summary           AKSReportSummary           `json:"summary"`
-	Recommendations   []AKSRecommendationSummary `json:"recommendations"`
-	ActionItems       []AKSActionItem            `json:"action_items"`
-	ClusterBreakdown  []ClusterRecommendations   `json:"cluster_breakdown"`
+	SubscriptionID   string                     `json:"subscription_id"`
+	GeneratedAt      time.Time                  `json:"generated_at"`
+	Summary          AKSReportSummary           `json:"summary"`
+	Recommendations  []AKSRecommendationSummary `json:"recommendations"`
+	ActionItems      []AKSActionItem            `json:"action_items"`
+	ClusterBreakdown []ClusterRecommendations   `json:"cluster_breakdown"`
 }
 
 // AKSReportSummary provides high-level statistics
 type AKSReportSummary struct {
-	TotalRecommendations int                    `json:"total_recommendations"`
-	ByCategory          map[string]int         `json:"by_category"`
-	BySeverity          map[string]int         `json:"by_severity"`
-	TotalPotentialSavings *CostSavings         `json:"total_potential_savings,omitempty"`
-	ClustersAffected     int                   `json:"clusters_affected"`
+	TotalRecommendations  int            `json:"total_recommendations"`
+	ByCategory            map[string]int `json:"by_category"`
+	BySeverity            map[string]int `json:"by_severity"`
+	TotalPotentialSavings *CostSavings   `json:"total_potential_savings,omitempty"`
+	ClustersAffected      int            `json:"clusters_affected"`
 }
 
 // AKSActionItem represents a prioritized action item
 type AKSActionItem struct {
-	Priority            int    `json:"priority"`
-	RecommendationID    string `json:"recommendation_id"`
-	ClusterName         string `json:"cluster_name"`
-	Category            string `json:"category"`
-	Description         string `json:"description"`
-	EstimatedEffort     string `json:"estimated_effort"`
-	PotentialImpact     string `json:"potential_impact"`
+	Priority         int    `json:"priority"`
+	RecommendationID string `json:"recommendation_id"`
+	ClusterName      string `json:"cluster_name"`
+	Category         string `json:"category"`
+	Description      string `json:"description"`
+	EstimatedEffort  string `json:"estimated_effort"`
+	PotentialImpact  string `json:"potential_impact"`
 }
 
 // ClusterRecommendations groups recommendations by cluster
@@ -70,7 +70,7 @@ type ClusterRecommendations struct {
 	ClusterName     string                     `json:"cluster_name"`
 	ResourceGroup   string                     `json:"resource_group"`
 	Recommendations []AKSRecommendationSummary `json:"recommendations"`
-	TotalSavings    *CostSavings              `json:"total_savings,omitempty"`
+	TotalSavings    *CostSavings               `json:"total_savings,omitempty"`
 }
 
 // CLIRecommendation represents the raw Azure CLI recommendation structure

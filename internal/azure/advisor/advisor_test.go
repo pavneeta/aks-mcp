@@ -90,13 +90,13 @@ var mockCLIRecommendations = []CLIRecommendation{
 
 func TestFilterAKSRecommendationsFromCLI(t *testing.T) {
 	aksRecommendations := filterAKSRecommendationsFromCLI(mockCLIRecommendations)
-	
+
 	// Should filter out the storage account recommendation and keep only AKS-related ones
 	expectedCount := 2
 	if len(aksRecommendations) != expectedCount {
 		t.Errorf("Expected %d AKS recommendations, got %d", expectedCount, len(aksRecommendations))
 	}
-	
+
 	// Verify the filtered recommendations are AKS-related
 	for _, rec := range aksRecommendations {
 		if !isAKSRelatedCLI(rec.Properties.ImpactedValue) {
@@ -118,7 +118,7 @@ func TestIsAKSRelatedCLI(t *testing.T) {
 		{"/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1", false},
 		{"", false},
 	}
-	
+
 	for _, tc := range testCases {
 		result := isAKSRelatedCLI(tc.resourceID)
 		if result != tc.expected {
@@ -129,15 +129,15 @@ func TestIsAKSRelatedCLI(t *testing.T) {
 
 func TestExtractAKSClusterNameFromCLI(t *testing.T) {
 	testCases := []struct {
-		resourceID    string
-		expectedName  string
+		resourceID   string
+		expectedName string
 	}{
 		{"/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerService/managedClusters/aks-cluster-1", "aks-cluster-1"},
 		{"/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerService/managedClusters/my-test-cluster/agentPools/nodepool1", "my-test-cluster"},
 		{"/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/mystorage", ""},
 		{"", ""},
 	}
-	
+
 	for _, tc := range testCases {
 		result := extractAKSClusterNameFromCLI(tc.resourceID)
 		if result != tc.expectedName {
@@ -148,15 +148,15 @@ func TestExtractAKSClusterNameFromCLI(t *testing.T) {
 
 func TestExtractResourceGroupFromResourceID(t *testing.T) {
 	testCases := []struct {
-		resourceID    string
-		expectedRG    string
+		resourceID string
+		expectedRG string
 	}{
 		{"/subscriptions/sub1/resourceGroups/my-rg/providers/Microsoft.ContainerService/managedClusters/aks-cluster-1", "my-rg"},
 		{"/subscriptions/sub1/resourceGroups/test-rg/providers/Microsoft.Storage/storageAccounts/mystorage", "test-rg"},
 		{"/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec1", ""},
 		{"", ""},
 	}
-	
+
 	for _, tc := range testCases {
 		result := extractResourceGroupFromResourceID(tc.resourceID)
 		if result != tc.expectedRG {
@@ -168,23 +168,23 @@ func TestExtractResourceGroupFromResourceID(t *testing.T) {
 func TestConvertToAKSRecommendationSummary(t *testing.T) {
 	rec := mockCLIRecommendations[0] // Cost recommendation for AKS cluster
 	summary := convertToAKSRecommendationSummary(rec)
-	
+
 	if summary.ID != rec.ID {
 		t.Errorf("Expected ID %s, got %s", rec.ID, summary.ID)
 	}
-	
+
 	if summary.Category != rec.Properties.Category {
 		t.Errorf("Expected category %s, got %s", rec.Properties.Category, summary.Category)
 	}
-	
+
 	if summary.ClusterName != "aks-cluster-1" {
 		t.Errorf("Expected cluster name aks-cluster-1, got %s", summary.ClusterName)
 	}
-	
+
 	if summary.ResourceGroup != "rg1" {
 		t.Errorf("Expected resource group rg1, got %s", summary.ResourceGroup)
 	}
-	
+
 	if summary.AKSSpecific.ConfigurationArea != "compute" {
 		t.Errorf("Expected configuration area compute, got %s", summary.AKSSpecific.ConfigurationArea)
 	}
@@ -196,13 +196,13 @@ func TestFilterBySeverity(t *testing.T) {
 	if len(highSeverity) != 1 {
 		t.Errorf("Expected 1 high severity recommendation, got %d", len(highSeverity))
 	}
-	
+
 	// Filter for Medium severity
 	mediumSeverity := filterBySeverity(mockCLIRecommendations, "Medium")
 	if len(mediumSeverity) != 1 {
 		t.Errorf("Expected 1 medium severity recommendation, got %d", len(mediumSeverity))
 	}
-	
+
 	// Filter for Low severity
 	lowSeverity := filterBySeverity(mockCLIRecommendations, "Low")
 	if len(lowSeverity) != 1 {
@@ -214,31 +214,31 @@ func TestGenerateAKSAdvisorReport(t *testing.T) {
 	// Convert mock data to AKS recommendations
 	aksRecommendations := filterAKSRecommendationsFromCLI(mockCLIRecommendations)
 	summaries := convertToAKSRecommendationSummaries(aksRecommendations)
-	
+
 	// Generate report
 	report := generateAKSAdvisorReport("test-subscription", summaries, "summary")
-	
+
 	if report.SubscriptionID != "test-subscription" {
 		t.Errorf("Expected subscription ID test-subscription, got %s", report.SubscriptionID)
 	}
-	
+
 	if len(report.Recommendations) != 2 {
 		t.Errorf("Expected 2 recommendations in report, got %d", len(report.Recommendations))
 	}
-	
+
 	if report.Summary.TotalRecommendations != 2 {
 		t.Errorf("Expected total recommendations 2, got %d", report.Summary.TotalRecommendations)
 	}
-	
+
 	if report.Summary.ClustersAffected != 1 {
 		t.Errorf("Expected 1 cluster affected, got %d", report.Summary.ClustersAffected)
 	}
-	
+
 	// Check category breakdown
 	if report.Summary.ByCategory["Cost"] != 1 {
 		t.Errorf("Expected 1 cost recommendation, got %d", report.Summary.ByCategory["Cost"])
 	}
-	
+
 	if report.Summary.ByCategory["Security"] != 1 {
 		t.Errorf("Expected 1 security recommendation, got %d", report.Summary.ByCategory["Security"])
 	}
@@ -255,7 +255,7 @@ func TestMapCategoryToConfigArea(t *testing.T) {
 		{"HighAvailability", "networking"},
 		{"Unknown", "general"},
 	}
-	
+
 	for _, tc := range testCases {
 		result := mapCategoryToConfigArea(tc.category)
 		if result != tc.expectedArea {
@@ -269,12 +269,12 @@ func TestHandleAdvisorRecommendationInvalidOperation(t *testing.T) {
 	params := map[string]interface{}{
 		"operation": "invalid_operation",
 	}
-	
+
 	_, err := HandleAdvisorRecommendation(params, cfg)
 	if err == nil {
 		t.Error("Expected error for invalid operation, got nil")
 	}
-	
+
 	expectedError := "invalid operation: invalid_operation"
 	if !contains(err.Error(), expectedError) {
 		t.Errorf("Expected error to contain %s, got %s", expectedError, err.Error())
@@ -284,12 +284,12 @@ func TestHandleAdvisorRecommendationInvalidOperation(t *testing.T) {
 func TestHandleAdvisorRecommendationMissingOperation(t *testing.T) {
 	cfg := &config.ConfigData{}
 	params := map[string]interface{}{}
-	
+
 	_, err := HandleAdvisorRecommendation(params, cfg)
 	if err == nil {
 		t.Error("Expected error for missing operation, got nil")
 	}
-	
+
 	expectedError := "operation parameter is required"
 	if err.Error() != expectedError {
 		t.Errorf("Expected error %s, got %s", expectedError, err.Error())
