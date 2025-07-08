@@ -10,6 +10,9 @@ This folder includes all the prompts for the AKS-MCP server. These prompt files 
 - **`README.md`** - This file, describing the prompts folder and its contents
 - **`monitoringservice.md`** - Feature requirements and implementation details for MCP monitoring service integration
 - **`azure-diagnostics.md`** - Implementation specifications for Azure diagnostic and advisory tools (AppLens detectors, Resource Health, Azure Advisor)
+- **`azure-cli-tools.md`** - Azure CLI (az aks) tools integration feature documentation
+- **`azure-network-tools.md`** - AKS resource information tools (VNet, NSG, Route Table, Subnet, Load Balancer) documentation
+- **`azure-resource-caching.md`** - Azure resource caching system feature documentation
 
 ### File Structure
 
@@ -18,26 +21,51 @@ prompts/
 ├── README.md                    # This documentation file
 ├── monitoringservice.md        # Monitoring service integration requirements
 └── azure-diagnostics.md        # Azure diagnostics and advisory tools specifications
+├── azure-cli-tools.md          # Azure CLI tools integration documentation
+├── azure-network-tools.md      # AKS network information tools documentation
+└── azure-resource-caching.md   # Azure resource caching system documentation
 ```
 
 ## AKS-MCP Server Capabilities
 
 The prompts in this folder are designed to test and validate the following AKS-MCP server capabilities:
 
-### Core AKS Operations
-- Cluster information retrieval and management
-- AKS cluster listing and discovery across subscriptions
-- Cluster health status and monitoring
-- Node and resource management
+### Core Features (Currently Implemented)
 
-### Network Operations
-- Virtual Network (VNet) information and configuration
+#### Azure CLI Tools Integration
+- Azure CLI (`az aks`) command execution through MCP tools
+- Support for read-only, read-write, and admin access levels
+- Individual command registration with security validation
+- Account management commands (login, account set, list subscriptions)
+
+#### Azure Resource Information Tools
+- Virtual Network (VNet) information and configuration retrieval
+- Network Security Group (NSG) rules and policies access
+- Route table information and network routing details
 - Subnet details and IP address management
-- Network Security Group (NSG) rules and policies
-- Route table information and network routing
-- Load balancer and ingress configuration
+- Load balancer configuration access (external and internal)
 
-### Monitoring and Observability
+#### Security and Access Control System
+- Three-tier access control (readonly, readwrite, admin)
+- Command injection protection and security validation
+- Access level enforcement at server and tool level
+- Operation categorization and permission management
+
+#### MCP Server Framework
+- Model Context Protocol server implementation
+- Multiple transport support (stdio, SSE, streamable-http)
+- Dynamic tool registration based on access level
+- AI assistant integration (VS Code Copilot, Claude, etc.)
+
+#### Azure Resource Caching System
+- In-memory caching for Azure resources and API responses
+- Configurable cache timeouts and automatic expiration
+- Thread-safe cache operations with performance optimization
+- Multi-subscription cache management
+
+### Future Planned Features
+
+#### Monitoring and Observability (In Development)
 - Azure Monitor integration and dashboard access
 - Log Analytics workspace queries and log retrieval
 - Application Insights performance monitoring and tracing
