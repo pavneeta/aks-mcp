@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/aks-mcp/internal/azure/advisor"
 	"github.com/Azure/aks-mcp/internal/azure/resourcehelpers"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
@@ -313,3 +314,15 @@ func GetClusterDetails(ctx context.Context, client *azure.AzureClient, subscript
 // =============================================================================
 // TODO: Future Handler Categories
 // =============================================================================
+
+// =============================================================================
+// Advisory-related Handlers
+// =============================================================================
+
+// GetAdvisorRecommendationHandler returns a handler for the az_advisor_recommendation command
+func GetAdvisorRecommendationHandler(cfg *config.ConfigData) tools.ResourceHandler {
+	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
+		// Use the advisor package handler directly
+		return advisor.HandleAdvisorRecommendation(params, cfg)
+	})
+}
