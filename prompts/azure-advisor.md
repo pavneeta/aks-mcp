@@ -22,7 +22,7 @@ Implement Azure Advisor recommendation capabilities for AKS clusters and related
 
 ## Implementation Steps
 
-1. **Execute Azure CLI commands** to retrieve recommendations
+1. **Use existing executor** from `internal/az/executor.go` for Azure CLI commands
 2. **Parse JSON output** from Azure CLI responses
 3. **Filter for AKS resources** (managedClusters, agentPools, related networking)
 4. **Handle errors** gracefully with meaningful messages
@@ -40,9 +40,8 @@ az advisor recommendation show --recommendation-id {id} --output json
 # Filter by category and resource group
 az advisor recommendation list --category Cost --resource-group {rg} --output json
 ```
-- Handle errors gracefully with meaningful messages
 
-### AKS Resource Filtering
+## AKS Resource Filtering
 Filter recommendations for:
 - `Microsoft.ContainerService/managedClusters`
 - `Microsoft.ContainerService/managedClusters/agentPools`
@@ -53,7 +52,6 @@ Filter recommendations for:
 ### File Organization
 ```
 internal/azure/advisor/
-├── cli_client.go          # Azure CLI command execution
 ├── aks_recommendations.go # AKS-specific filtering and processing
 ├── reports.go            # Report generation
 └── types.go              # Data types
@@ -63,6 +61,28 @@ internal/azure/advisor/
 ```go
 func (s *Server) registerAdvisorTools() {
     s.registerTool("az_advisor_recommendation", s.handleAdvisorRecommendation)
+}
+```
+
+### Use Existing Executor
+```go
+import "github.com/Azure/aks-mcp/internal/az"
+
+func (s *Server) handleAdvisorRecommendation(params map[string]interface{}) (string, error) {
+    // Use existing executor instead of creating new CLI client
+    executor := az.NewExecutor()
+    
+    // Build Azure CLI command
+    args := []string{"advisor", "recommendation", "list", "--output", "json"}
+    
+    // Execute command using existing executor
+    result, err := executor.Execute("az", args, nil)
+    if err != nil {
+        return "", fmt.Errorf("failed to execute advisor command: %w", err)
+    }
+    
+    // Parse and filter results for AKS resources
+    // ...
 }
 ```
 
