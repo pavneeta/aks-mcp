@@ -9,7 +9,7 @@ import (
 // Test data
 var mockCLIRecommendations = []CLIRecommendation{
 	{
-		ID:            "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec1",
+		ID:            "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerService/managedClusters/aks-cluster-1",
 		Name:          "rec1",
 		Category:      "Cost",
 		Impact:        "High",
@@ -24,7 +24,7 @@ var mockCLIRecommendations = []CLIRecommendation{
 		},
 	},
 	{
-		ID:            "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec2",
+		ID:            "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerService/managedClusters/aks-cluster-1/agentPools/nodepool1",
 		Name:          "rec2",
 		Category:      "Security",
 		Impact:        "Medium",
@@ -39,7 +39,7 @@ var mockCLIRecommendations = []CLIRecommendation{
 		},
 	},
 	{
-		ID:            "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec3",
+		ID:            "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/mystorage",
 		Name:          "rec3",
 		Category:      "Performance",
 		Impact:        "Low",
@@ -152,8 +152,8 @@ func TestConvertToAKSRecommendationSummary(t *testing.T) {
 		t.Errorf("Expected resource group rg1, got %s", summary.ResourceGroup)
 	}
 
-	if summary.ResourceID != rec.ImpactedValue {
-		t.Errorf("Expected resource ID %s, got %s", rec.ImpactedValue, summary.ResourceID)
+	if summary.ResourceID != rec.ID {
+		t.Errorf("Expected resource ID %s, got %s", rec.ID, summary.ResourceID)
 	}
 
 	if summary.AKSSpecific.ConfigurationArea != "compute" {

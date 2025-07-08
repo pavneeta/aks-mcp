@@ -113,7 +113,7 @@ func handleAKSAdvisorRecommendationDetails(params map[string]interface{}, cfg *c
 	}
 
 	// Check if this is an AKS-related recommendation
-	if !isAKSRelatedCLI(recommendation.ImpactedValue) {
+	if !isAKSRelatedCLI(recommendation.ID) {
 		return "", fmt.Errorf("recommendation %s is not related to AKS resources", recommendationID)
 	}
 
@@ -233,11 +233,11 @@ func getRecommendationDetailsViaCLI(recommendationID string, cfg *config.ConfigD
 	return &recommendation, nil
 }
 
-// filterAKSRecommendationsFromCLI filters recommendations to only include AKS-related resources
+// filterAKSRecommendationsFromCLI filters recommendations to only AKS-related resources
 func filterAKSRecommendationsFromCLI(recommendations []CLIRecommendation) []CLIRecommendation {
 	var aksRecommendations []CLIRecommendation
 	for _, rec := range recommendations {
-		if isAKSRelatedCLI(rec.ImpactedValue) {
+		if isAKSRelatedCLI(rec.ID) {
 			aksRecommendations = append(aksRecommendations, rec)
 		}
 	}
@@ -270,7 +270,7 @@ func filterBySeverity(recommendations []CLIRecommendation, severity string) []CL
 func filterByClusterNames(recommendations []CLIRecommendation, clusterNames []string) []CLIRecommendation {
 	var filtered []CLIRecommendation
 	for _, rec := range recommendations {
-		clusterName := extractAKSClusterNameFromCLI(rec.ImpactedValue)
+		clusterName := extractAKSClusterNameFromCLI(rec.ID)
 		for _, filterName := range clusterNames {
 			if strings.EqualFold(clusterName, filterName) {
 				filtered = append(filtered, rec)
@@ -304,8 +304,8 @@ func convertToAKSRecommendationSummaries(recommendations []CLIRecommendation) []
 
 // convertToAKSRecommendationSummary converts a single CLI recommendation to AKS recommendation summary
 func convertToAKSRecommendationSummary(rec CLIRecommendation) AKSRecommendationSummary {
-	clusterName := extractAKSClusterNameFromCLI(rec.ImpactedValue)
-	resourceGroup := extractResourceGroupFromResourceID(rec.ImpactedValue)
+	clusterName := extractAKSClusterNameFromCLI(rec.ID)
+	resourceGroup := extractResourceGroupFromResourceID(rec.ID)
 
 	// Parse last updated time
 	lastUpdated, _ := time.Parse(time.RFC3339, rec.LastUpdated)
@@ -316,7 +316,7 @@ func convertToAKSRecommendationSummary(rec CLIRecommendation) AKSRecommendationS
 		Impact:        rec.Impact,
 		ClusterName:   clusterName,
 		ResourceGroup: resourceGroup,
-		ResourceID:    rec.ImpactedValue,
+		ResourceID:    rec.ID,
 		Description:   rec.ShortDescription.Problem + " " + rec.ShortDescription.Solution,
 		Severity:      rec.Impact, // Map impact to severity
 		LastUpdated:   lastUpdated,
