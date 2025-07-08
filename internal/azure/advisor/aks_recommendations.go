@@ -3,6 +3,7 @@ package advisor
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -14,8 +15,11 @@ import (
 func HandleAdvisorRecommendation(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
 	operation, ok := params["operation"].(string)
 	if !ok {
+		log.Println("[ADVISOR] Missing operation parameter")
 		return "", fmt.Errorf("operation parameter is required")
 	}
+
+	log.Printf("[ADVISOR] Handling operation: %s", operation)
 
 	switch operation {
 	case "list":
@@ -25,6 +29,7 @@ func HandleAdvisorRecommendation(params map[string]interface{}, cfg *config.Conf
 	case "report":
 		return handleAKSAdvisorRecommendationReport(params, cfg)
 	default:
+		log.Printf("[ADVISOR] Invalid operation: %s", operation)
 		return "", fmt.Errorf("invalid operation: %s. Allowed values: list, details, report", operation)
 	}
 }
@@ -33,6 +38,7 @@ func HandleAdvisorRecommendation(params map[string]interface{}, cfg *config.Conf
 func handleAKSAdvisorRecommendationList(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
 	subscriptionID, ok := params["subscription_id"].(string)
 	if !ok {
+		log.Println("[ADVISOR] Missing subscription_id parameter")
 		return "", fmt.Errorf("subscription_id parameter is required")
 	}
 
@@ -40,6 +46,9 @@ func handleAKSAdvisorRecommendationList(params map[string]interface{}, cfg *conf
 	resourceGroup, _ := params["resource_group"].(string)
 	category, _ := params["category"].(string)
 	severity, _ := params["severity"].(string)
+
+	log.Printf("[ADVISOR] Listing recommendations for subscription: %s, resource_group: %s, category: %s, severity: %s",
+		subscriptionID, resourceGroup, category, severity)
 
 	// Get cluster names filter if provided
 	var clusterNames []string
@@ -50,23 +59,30 @@ func handleAKSAdvisorRecommendationList(params map[string]interface{}, cfg *conf
 				clusterNames = append(clusterNames, trimmedName)
 			}
 		}
+		log.Printf("[ADVISOR] Filtering by cluster names: %v", clusterNames)
 	}
 
 	// Execute Azure CLI command to get recommendations
 	recommendations, err := listRecommendationsViaCLI(subscriptionID, resourceGroup, category, cfg)
 	if err != nil {
+		log.Printf("[ADVISOR] Failed to list recommendations: %v", err)
 		return "", fmt.Errorf("failed to list recommendations: %w", err)
 	}
 
+	log.Printf("[ADVISOR] Found %d total recommendations", len(recommendations))
+
 	// Filter for AKS-related recommendations
 	aksRecommendations := filterAKSRecommendationsFromCLI(recommendations)
+	log.Printf("[ADVISOR] Found %d AKS-related recommendations", len(aksRecommendations))
 
 	// Apply additional filters
 	if severity != "" {
 		aksRecommendations = filterBySeverity(aksRecommendations, severity)
+		log.Printf("[ADVISOR] After severity filter: %d recommendations", len(aksRecommendations))
 	}
 	if len(clusterNames) > 0 {
 		aksRecommendations = filterByClusterNames(aksRecommendations, clusterNames)
+		log.Printf("[ADVISOR] After cluster name filter: %d recommendations", len(aksRecommendations))
 	}
 
 	// Convert to AKS recommendation summaries
@@ -75,9 +91,11 @@ func handleAKSAdvisorRecommendationList(params map[string]interface{}, cfg *conf
 	// Return JSON response
 	result, err := json.MarshalIndent(summaries, "", "  ")
 	if err != nil {
+		log.Printf("[ADVISOR] Failed to marshal recommendations: %v", err)
 		return "", fmt.Errorf("failed to marshal recommendations: %w", err)
 	}
 
+	log.Printf("[ADVISOR] Returning %d recommendation summaries", len(summaries))
 	return string(result), nil
 }
 
@@ -95,7 +113,7 @@ func handleAKSAdvisorRecommendationDetails(params map[string]interface{}, cfg *c
 	}
 
 	// Check if this is an AKS-related recommendation
-	if !isAKSRelatedCLI(recommendation.Properties.ImpactedValue) {
+	if !isAKSRelatedCLI(recommendation.ImpactedValue) {
 		return "", fmt.Errorf("recommendation %s is not related to AKS resources", recommendationID)
 	}
 
@@ -157,27 +175,34 @@ func listRecommendationsViaCLI(subscriptionID, resourceGroup, category string, c
 	if resourceGroup != "" {
 		args = append(args, "--resource-group", resourceGroup)
 	}
-	if category != "" {
-		args = append(args, "--category", category)
-	}
+	//if category != "" {
+	//	args = append(args, "--category", category)
+	//}
 
 	// Create command parameters
 	cmdParams := map[string]interface{}{
 		"command": "az " + strings.Join(args, " "),
 	}
 
+	log.Printf("[ADVISOR] Executing command: %s", cmdParams["command"])
+
 	// Execute command
 	output, err := executor.Execute(cmdParams, cfg)
 	if err != nil {
+		log.Printf("[ADVISOR] Command execution failed: %v", err)
 		return nil, fmt.Errorf("failed to execute Azure CLI command: %w", err)
 	}
+
+	log.Printf("[ADVISOR] Command output length: %d characters", len(output))
 
 	// Parse JSON output
 	var recommendations []CLIRecommendation
 	if err := json.Unmarshal([]byte(output), &recommendations); err != nil {
+		log.Printf("[ADVISOR] Failed to parse JSON output: %v", err)
 		return nil, fmt.Errorf("failed to parse recommendations JSON: %w", err)
 	}
 
+	log.Printf("[ADVISOR] Successfully parsed %d recommendations from CLI output", len(recommendations))
 	return recommendations, nil
 }
 
@@ -212,7 +237,7 @@ func getRecommendationDetailsViaCLI(recommendationID string, cfg *config.ConfigD
 func filterAKSRecommendationsFromCLI(recommendations []CLIRecommendation) []CLIRecommendation {
 	var aksRecommendations []CLIRecommendation
 	for _, rec := range recommendations {
-		if isAKSRelatedCLI(rec.Properties.ImpactedValue) {
+		if isAKSRelatedCLI(rec.ImpactedValue) {
 			aksRecommendations = append(aksRecommendations, rec)
 		}
 	}
@@ -234,7 +259,7 @@ func isAKSRelatedCLI(resourceID string) bool {
 func filterBySeverity(recommendations []CLIRecommendation, severity string) []CLIRecommendation {
 	var filtered []CLIRecommendation
 	for _, rec := range recommendations {
-		if strings.EqualFold(rec.Properties.Impact, severity) {
+		if strings.EqualFold(rec.Impact, severity) {
 			filtered = append(filtered, rec)
 		}
 	}
@@ -245,7 +270,7 @@ func filterBySeverity(recommendations []CLIRecommendation, severity string) []CL
 func filterByClusterNames(recommendations []CLIRecommendation, clusterNames []string) []CLIRecommendation {
 	var filtered []CLIRecommendation
 	for _, rec := range recommendations {
-		clusterName := extractAKSClusterNameFromCLI(rec.Properties.ImpactedValue)
+		clusterName := extractAKSClusterNameFromCLI(rec.ImpactedValue)
 		for _, filterName := range clusterNames {
 			if strings.EqualFold(clusterName, filterName) {
 				filtered = append(filtered, rec)
@@ -279,25 +304,25 @@ func convertToAKSRecommendationSummaries(recommendations []CLIRecommendation) []
 
 // convertToAKSRecommendationSummary converts a single CLI recommendation to AKS recommendation summary
 func convertToAKSRecommendationSummary(rec CLIRecommendation) AKSRecommendationSummary {
-	clusterName := extractAKSClusterNameFromCLI(rec.Properties.ImpactedValue)
-	resourceGroup := extractResourceGroupFromResourceID(rec.Properties.ImpactedValue)
+	clusterName := extractAKSClusterNameFromCLI(rec.ImpactedValue)
+	resourceGroup := extractResourceGroupFromResourceID(rec.ImpactedValue)
 
 	// Parse last updated time
-	lastUpdated, _ := time.Parse(time.RFC3339, rec.Properties.LastUpdated)
+	lastUpdated, _ := time.Parse(time.RFC3339, rec.LastUpdated)
 
 	return AKSRecommendationSummary{
-		ID:               rec.ID,
-		Category:         rec.Properties.Category,
-		Impact:           rec.Properties.Impact,
-		ClusterName:      clusterName,
-		ResourceGroup:    resourceGroup,
-		ImpactedResource: rec.Properties.ImpactedValue,
-		Description:      rec.Properties.ShortDescription.Problem + " " + rec.Properties.ShortDescription.Solution,
-		Severity:         rec.Properties.Impact, // Map impact to severity
-		LastUpdated:      lastUpdated,
-		Status:           "Active",
+		ID:            rec.ID,
+		Category:      rec.Category,
+		Impact:        rec.Impact,
+		ClusterName:   clusterName,
+		ResourceGroup: resourceGroup,
+		ResourceID:    rec.ImpactedValue,
+		Description:   rec.ShortDescription.Problem + " " + rec.ShortDescription.Solution,
+		Severity:      rec.Impact, // Map impact to severity
+		LastUpdated:   lastUpdated,
+		Status:        "Active",
 		AKSSpecific: AKSRecommendationDetails{
-			ConfigurationArea: mapCategoryToConfigArea(rec.Properties.Category),
+			ConfigurationArea: mapCategoryToConfigArea(rec.Category),
 		},
 	}
 }

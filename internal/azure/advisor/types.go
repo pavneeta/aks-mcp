@@ -11,7 +11,7 @@ type AKSRecommendationSummary struct {
 	Impact           string                   `json:"impact"`
 	ClusterName      string                   `json:"cluster_name"`
 	ResourceGroup    string                   `json:"resource_group"`
-	ImpactedResource string                   `json:"impacted_resource"`
+	ResourceID       string                   `json:"resource_id"`
 	Description      string                   `json:"description"`
 	Severity         string                   `json:"severity"`
 	PotentialSavings *CostSavings             `json:"potential_savings,omitempty"`
@@ -75,16 +75,14 @@ type ClusterRecommendations struct {
 
 // CLIRecommendation represents the raw Azure CLI recommendation structure
 type CLIRecommendation struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Properties struct {
-		Category         string `json:"category"`
-		Impact           string `json:"impact"`
-		ImpactedValue    string `json:"impactedValue"`
-		ShortDescription struct {
-			Problem  string `json:"problem"`
-			Solution string `json:"solution"`
-		} `json:"shortDescription"`
-		LastUpdated string `json:"lastUpdated"`
-	} `json:"properties"`
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	Category         string `json:"category"`
+	Impact           string `json:"impact"`
+	ImpactedValue    string `json:"impactedValue"`
+	LastUpdated      string `json:"lastUpdated"`
+	ShortDescription struct {
+		Problem  string `json:"problem"`
+		Solution string `json:"solution"`
+	} `json:"shortDescription"`
 }

@@ -9,81 +9,48 @@ import (
 // Test data
 var mockCLIRecommendations = []CLIRecommendation{
 	{
-		ID:   "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec1",
-		Name: "rec1",
-		Properties: struct {
-			Category         string `json:"category"`
-			Impact           string `json:"impact"`
-			ImpactedValue    string `json:"impactedValue"`
-			ShortDescription struct {
-				Problem  string `json:"problem"`
-				Solution string `json:"solution"`
-			} `json:"shortDescription"`
-			LastUpdated string `json:"lastUpdated"`
+		ID:            "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec1",
+		Name:          "rec1",
+		Category:      "Cost",
+		Impact:        "High",
+		ImpactedValue: "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerService/managedClusters/aks-cluster-1",
+		LastUpdated:   "2024-01-15T10:30:00Z",
+		ShortDescription: struct {
+			Problem  string `json:"problem"`
+			Solution string `json:"solution"`
 		}{
-			Category:      "Cost",
-			Impact:        "High",
-			ImpactedValue: "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerService/managedClusters/aks-cluster-1",
-			ShortDescription: struct {
-				Problem  string `json:"problem"`
-				Solution string `json:"solution"`
-			}{
-				Problem:  "Underutilized AKS cluster nodes",
-				Solution: "Consider reducing node count or using smaller VM sizes for your AKS cluster",
-			},
-			LastUpdated: "2024-01-15T10:30:00Z",
+			Problem:  "Underutilized AKS cluster nodes",
+			Solution: "Consider reducing node count or using smaller VM sizes for your AKS cluster",
 		},
 	},
 	{
-		ID:   "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec2",
-		Name: "rec2",
-		Properties: struct {
-			Category         string `json:"category"`
-			Impact           string `json:"impact"`
-			ImpactedValue    string `json:"impactedValue"`
-			ShortDescription struct {
-				Problem  string `json:"problem"`
-				Solution string `json:"solution"`
-			} `json:"shortDescription"`
-			LastUpdated string `json:"lastUpdated"`
+		ID:            "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec2",
+		Name:          "rec2",
+		Category:      "Security",
+		Impact:        "Medium",
+		ImpactedValue: "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerService/managedClusters/aks-cluster-1/agentPools/nodepool1",
+		LastUpdated:   "2024-01-15T09:15:00Z",
+		ShortDescription: struct {
+			Problem  string `json:"problem"`
+			Solution string `json:"solution"`
 		}{
-			Category:      "Security",
-			Impact:        "Medium",
-			ImpactedValue: "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerService/managedClusters/aks-cluster-1/agentPools/nodepool1",
-			ShortDescription: struct {
-				Problem  string `json:"problem"`
-				Solution string `json:"solution"`
-			}{
-				Problem:  "AKS node pool missing security configurations",
-				Solution: "Enable Azure Policy and security monitoring for AKS node pools",
-			},
-			LastUpdated: "2024-01-15T09:15:00Z",
+			Problem:  "AKS node pool missing security configurations",
+			Solution: "Enable Azure Policy and security monitoring for AKS node pools",
 		},
 	},
 	{
-		ID:   "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec3",
-		Name: "rec3",
-		Properties: struct {
-			Category         string `json:"category"`
-			Impact           string `json:"impact"`
-			ImpactedValue    string `json:"impactedValue"`
-			ShortDescription struct {
-				Problem  string `json:"problem"`
-				Solution string `json:"solution"`
-			} `json:"shortDescription"`
-			LastUpdated string `json:"lastUpdated"`
+		ID:            "/subscriptions/sub1/providers/Microsoft.Advisor/recommendations/rec3",
+		Name:          "rec3",
+		Category:      "Performance",
+		Impact:        "Low",
+		ImpactedValue: "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/mystorage",
+		LastUpdated:   "2024-01-15T08:00:00Z",
+		ShortDescription: struct {
+			Problem  string `json:"problem"`
+			Solution string `json:"solution"`
 		}{
-			Category:      "Performance",
-			Impact:        "Low",
-			ImpactedValue: "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/mystorage",
-			ShortDescription: struct {
-				Problem  string `json:"problem"`
-				Solution string `json:"solution"`
-			}{
-				Problem:  "Storage account performance issue",
-				Solution: "Upgrade storage account tier",
-			},
-			LastUpdated: "2024-01-15T08:00:00Z",
+			Problem:  "Storage account performance issue",
+			Solution: "Upgrade storage account tier",
 		},
 	},
 }
@@ -99,8 +66,8 @@ func TestFilterAKSRecommendationsFromCLI(t *testing.T) {
 
 	// Verify the filtered recommendations are AKS-related
 	for _, rec := range aksRecommendations {
-		if !isAKSRelatedCLI(rec.Properties.ImpactedValue) {
-			t.Errorf("Non-AKS recommendation found in filtered results: %s", rec.Properties.ImpactedValue)
+		if !isAKSRelatedCLI(rec.ImpactedValue) {
+			t.Errorf("Non-AKS recommendation found in filtered results: %s", rec.ImpactedValue)
 		}
 	}
 }
@@ -173,8 +140,8 @@ func TestConvertToAKSRecommendationSummary(t *testing.T) {
 		t.Errorf("Expected ID %s, got %s", rec.ID, summary.ID)
 	}
 
-	if summary.Category != rec.Properties.Category {
-		t.Errorf("Expected category %s, got %s", rec.Properties.Category, summary.Category)
+	if summary.Category != rec.Category {
+		t.Errorf("Expected category %s, got %s", rec.Category, summary.Category)
 	}
 
 	if summary.ClusterName != "aks-cluster-1" {
@@ -183,6 +150,10 @@ func TestConvertToAKSRecommendationSummary(t *testing.T) {
 
 	if summary.ResourceGroup != "rg1" {
 		t.Errorf("Expected resource group rg1, got %s", summary.ResourceGroup)
+	}
+
+	if summary.ResourceID != rec.ImpactedValue {
+		t.Errorf("Expected resource ID %s, got %s", rec.ImpactedValue, summary.ResourceID)
 	}
 
 	if summary.AKSSpecific.ConfigurationArea != "compute" {
