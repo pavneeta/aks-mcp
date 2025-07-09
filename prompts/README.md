@@ -14,6 +14,7 @@ This folder includes all the prompts for the AKS-MCP server. These prompt files 
 - **`azure-cli-tools.md`** - Azure CLI tools integration and command execution specifications
 - **`azure-network-tools.md`** - Azure network resource tools and information retrieval specifications
 - **`azure-resource-caching.md`** - Azure resource caching system implementation specifications
+- **`azure-monitor-tools.md`** - Azure Monitor metrics and monitoring capabilities implementation specifications
 
 ### File Structure
 
@@ -25,7 +26,8 @@ prompts/
 ├── azure-advisor.md            # Azure Advisor recommendations integration
 ├── azure-cli-tools.md          # Azure CLI tools integration specifications
 ├── azure-network-tools.md      # Azure network resource tools specifications
-└── azure-resource-caching.md   # Azure resource caching system specifications
+├── azure-resource-caching.md   # Azure resource caching system specifications
+└── azure-monitor-tools.md      # Azure Monitor metrics and monitoring specifications
 ```
 
 ## AKS-MCP Server Capabilities
