@@ -6,6 +6,7 @@ import (
 
 	"github.com/Azure/aks-mcp/internal/azcli"
 	"github.com/Azure/aks-mcp/internal/azureclient"
+	"github.com/Azure/aks-mcp/internal/components/advisor"
 	"github.com/Azure/aks-mcp/internal/components/azaks"
 	"github.com/Azure/aks-mcp/internal/components/network"
 	"github.com/Azure/aks-mcp/internal/config"
@@ -172,6 +173,6 @@ func (s *Service) registerAdvisorTools() {
 
 	// Register Azure Advisor recommendation tool (available at all access levels)
 	log.Println("Registering advisor tool: az_advisor_recommendation")
-	advisorTool := network.RegisterAdvisorRecommendationTool()
-	s.mcpServer.AddTool(advisorTool, tools.CreateResourceHandler(network.GetAdvisorRecommendationHandler(s.cfg), s.cfg))
+	advisorTool := advisor.RegisterAdvisorRecommendationTool()
+	s.mcpServer.AddTool(advisorTool, tools.CreateResourceHandler(advisor.GetAdvisorRecommendationHandler(s.cfg), s.cfg))
 }

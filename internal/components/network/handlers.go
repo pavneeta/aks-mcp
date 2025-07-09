@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/Azure/aks-mcp/internal/azureclient"
-	"github.com/Azure/aks-mcp/internal/components/advisor"
 	"github.com/Azure/aks-mcp/internal/components/network/resourcehelpers"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
@@ -309,20 +308,4 @@ func ExtractAKSParameters(params map[string]interface{}) (subscriptionID, resour
 func GetClusterDetails(ctx context.Context, client *azureclient.AzureClient, subscriptionID, resourceGroup, clusterName string) (*armcontainerservice.ManagedCluster, error) {
 	// Get the cluster from Azure client (which now handles caching internally)
 	return client.GetAKSCluster(ctx, subscriptionID, resourceGroup, clusterName)
-}
-
-// =============================================================================
-// TODO: Future Handler Categories
-// =============================================================================
-
-// =============================================================================
-// Advisory-related Handlers
-// =============================================================================
-
-// GetAdvisorRecommendationHandler returns a handler for the az_advisor_recommendation command
-func GetAdvisorRecommendationHandler(cfg *config.ConfigData) tools.ResourceHandler {
-	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
-		// Use the advisor package handler directly
-		return advisor.HandleAdvisorRecommendation(params, cfg)
-	})
 }
