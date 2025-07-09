@@ -1,4 +1,4 @@
-package az
+package azcli
 
 import (
 	"fmt"

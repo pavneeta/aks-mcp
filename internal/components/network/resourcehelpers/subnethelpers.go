@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/aks-mcp/internal/azureclient"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 )
@@ -13,7 +13,7 @@ import (
 // It tries to get the subnet ID from the agent pool profiles first.
 // If not found, it will try to find the VNet in the node resource group, and then
 // look for a subnet with the name 'aks-subnet' or use the first subnet if not found.
-func GetSubnetIDFromAKS(ctx context.Context, cluster *armcontainerservice.ManagedCluster, client *azure.AzureClient) (string, error) {
+func GetSubnetIDFromAKS(ctx context.Context, cluster *armcontainerservice.ManagedCluster, client *azureclient.AzureClient) (string, error) {
 	// First, try to get subnet ID directly from agent pool profiles
 	if cluster.Properties != nil && cluster.Properties.AgentPoolProfiles != nil {
 		for _, pool := range cluster.Properties.AgentPoolProfiles {

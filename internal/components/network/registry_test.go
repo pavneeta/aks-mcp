@@ -1,9 +1,9 @@
-package resourcehandlers
+package network
 
 import (
 	"testing"
 
-	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/aks-mcp/internal/azureclient"
 	"github.com/Azure/aks-mcp/internal/config"
 )
 
@@ -56,7 +56,7 @@ func TestRegisterSubnetInfoTool(t *testing.T) {
 }
 
 func TestGetVNetInfoHandler(t *testing.T) {
-	mockClient := &azure.AzureClient{}
+	mockClient := &azureclient.AzureClient{}
 	cfg := &config.ConfigData{}
 
 	handler := GetVNetInfoHandler(mockClient, cfg)
@@ -67,7 +67,7 @@ func TestGetVNetInfoHandler(t *testing.T) {
 }
 
 func TestGetNSGInfoHandler(t *testing.T) {
-	mockClient := &azure.AzureClient{}
+	mockClient := &azureclient.AzureClient{}
 	cfg := &config.ConfigData{}
 
 	handler := GetNSGInfoHandler(mockClient, cfg)
@@ -78,7 +78,7 @@ func TestGetNSGInfoHandler(t *testing.T) {
 }
 
 func TestGetRouteTableInfoHandler(t *testing.T) {
-	mockClient := &azure.AzureClient{}
+	mockClient := &azureclient.AzureClient{}
 	cfg := &config.ConfigData{}
 
 	handler := GetRouteTableInfoHandler(mockClient, cfg)
@@ -89,7 +89,7 @@ func TestGetRouteTableInfoHandler(t *testing.T) {
 }
 
 func TestGetSubnetInfoHandler(t *testing.T) {
-	mockClient := &azure.AzureClient{}
+	mockClient := &azureclient.AzureClient{}
 	cfg := &config.ConfigData{}
 
 	handler := GetSubnetInfoHandler(mockClient, cfg)

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/aks-mcp/internal/az"
+	"github.com/Azure/aks-mcp/internal/azcli"
 	"github.com/Azure/aks-mcp/internal/config"
 )
 
@@ -167,7 +167,7 @@ func handleAKSAdvisorRecommendationReport(params map[string]interface{}, cfg *co
 
 // listRecommendationsViaCLI executes Azure CLI command to list recommendations
 func listRecommendationsViaCLI(subscriptionID, resourceGroup, category string, cfg *config.ConfigData) ([]CLIRecommendation, error) {
-	executor := az.NewExecutor()
+	executor := azcli.NewExecutor()
 
 	// Build command arguments
 	args := []string{"advisor", "recommendation", "list", "--subscription", subscriptionID, "--output", "json"}
@@ -208,7 +208,7 @@ func listRecommendationsViaCLI(subscriptionID, resourceGroup, category string, c
 
 // getRecommendationDetailsViaCLI gets details for a specific recommendation
 func getRecommendationDetailsViaCLI(recommendationID string, cfg *config.ConfigData) (*CLIRecommendation, error) {
-	executor := az.NewExecutor()
+	executor := azcli.NewExecutor()
 
 	// Build command
 	args := []string{"advisor", "recommendation", "show", "--recommendation-id", recommendationID, "--output", "json"}

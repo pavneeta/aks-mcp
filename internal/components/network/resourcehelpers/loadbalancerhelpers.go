@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/aks-mcp/internal/azureclient"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 )
 
@@ -14,7 +14,7 @@ import (
 func GetLoadBalancerIDsFromAKS(
 	ctx context.Context,
 	cluster *armcontainerservice.ManagedCluster,
-	client *azure.AzureClient,
+	client *azureclient.AzureClient,
 ) ([]string, error) {
 	// Ensure the cluster is valid
 	if cluster == nil || cluster.Properties == nil {
@@ -41,7 +41,7 @@ func GetLoadBalancerIDsFromAKS(
 // - kubernetes-internal (for internal load balancer)
 func findLoadBalancersInNodeResourceGroup(
 	ctx context.Context,
-	client *azure.AzureClient,
+	client *azureclient.AzureClient,
 	subscriptionID string,
 	nodeResourceGroup string,
 ) ([]string, error) {

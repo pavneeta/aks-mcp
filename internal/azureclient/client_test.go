@@ -1,4 +1,4 @@
-package azure
+package azureclient
 
 import (
 	"testing"

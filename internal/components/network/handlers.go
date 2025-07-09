@@ -1,14 +1,13 @@
 // Package resourcehandlers provides handler functions for Azure resource tools.
-package resourcehandlers
+package network
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/Azure/aks-mcp/internal/advisor"
-	"github.com/Azure/aks-mcp/internal/azure"
-	"github.com/Azure/aks-mcp/internal/azure/resourcehelpers"
+	"github.com/Azure/aks-mcp/internal/azureclient"
+	"github.com/Azure/aks-mcp/internal/components/network/resourcehelpers"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
@@ -20,7 +19,7 @@ import (
 // =============================================================================
 
 // GetVNetInfoHandler returns a handler for the get_vnet_info command
-func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+func GetVNetInfoHandler(client *azureclient.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, rg, clusterName, err := ExtractAKSParameters(params)
@@ -63,7 +62,7 @@ func GetVNetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools
 }
 
 // GetNSGInfoHandler returns a handler for the get_nsg_info command
-func GetNSGInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+func GetNSGInfoHandler(client *azureclient.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, rg, clusterName, err := ExtractAKSParameters(params)
@@ -106,7 +105,7 @@ func GetNSGInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.
 }
 
 // GetRouteTableInfoHandler returns a handler for the get_route_table_info command
-func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+func GetRouteTableInfoHandler(client *azureclient.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, rg, clusterName, err := ExtractAKSParameters(params)
@@ -163,7 +162,7 @@ func GetRouteTableInfoHandler(client *azure.AzureClient, cfg *config.ConfigData)
 }
 
 // GetSubnetInfoHandler returns a handler for the get_subnet_info command
-func GetSubnetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+func GetSubnetInfoHandler(client *azureclient.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, rg, clusterName, err := ExtractAKSParameters(params)
@@ -206,7 +205,7 @@ func GetSubnetInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) too
 }
 
 // GetLoadBalancersInfoHandler returns a handler for the get_load_balancers_info command
-func GetLoadBalancersInfoHandler(client *azure.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+func GetLoadBalancersInfoHandler(client *azureclient.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract parameters
 		subID, rg, clusterName, err := ExtractAKSParameters(params)
@@ -306,23 +305,7 @@ func ExtractAKSParameters(params map[string]interface{}) (subscriptionID, resour
 }
 
 // GetClusterDetails gets the details of an AKS cluster
-func GetClusterDetails(ctx context.Context, client *azure.AzureClient, subscriptionID, resourceGroup, clusterName string) (*armcontainerservice.ManagedCluster, error) {
+func GetClusterDetails(ctx context.Context, client *azureclient.AzureClient, subscriptionID, resourceGroup, clusterName string) (*armcontainerservice.ManagedCluster, error) {
 	// Get the cluster from Azure client (which now handles caching internally)
 	return client.GetAKSCluster(ctx, subscriptionID, resourceGroup, clusterName)
-}
-
-// =============================================================================
-// TODO: Future Handler Categories
-// =============================================================================
-
-// =============================================================================
-// Advisory-related Handlers
-// =============================================================================
-
-// GetAdvisorRecommendationHandler returns a handler for the az_advisor_recommendation command
-func GetAdvisorRecommendationHandler(cfg *config.ConfigData) tools.ResourceHandler {
-	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
-		// Use the advisor package handler directly
-		return advisor.HandleAdvisorRecommendation(params, cfg)
-	})
 }

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Azure/aks-mcp/internal/az"
-	"github.com/Azure/aks-mcp/internal/azure"
-	"github.com/Azure/aks-mcp/internal/azure/resourcehandlers"
+	"github.com/Azure/aks-mcp/internal/azcli"
+	"github.com/Azure/aks-mcp/internal/azureclient"
+	"github.com/Azure/aks-mcp/internal/components/advisor"
+	"github.com/Azure/aks-mcp/internal/components/azaks"
+	"github.com/Azure/aks-mcp/internal/components/network"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
 	"github.com/Azure/aks-mcp/internal/version"
@@ -83,28 +85,28 @@ func (s *Service) Run() error {
 // registerAzCommands registers individual az commands as separate tools
 func (s *Service) registerAzCommands() {
 	// Register read-only az commands (available at all access levels)
-	for _, cmd := range az.GetReadOnlyAzCommands() {
+	for _, cmd := range azaks.GetReadOnlyAzCommands() {
 		log.Println("Registering az command:", cmd.Name)
-		azTool := az.RegisterAzCommand(cmd)
-		commandExecutor := az.CreateCommandExecutorFunc(cmd.Name)
+		azTool := azaks.RegisterAzCommand(cmd)
+		commandExecutor := azcli.CreateCommandExecutorFunc(cmd.Name)
 		s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 	}
 
 	// Register account management commands (available at all access levels)
-	for _, cmd := range az.GetAccountAzCommands() {
+	for _, cmd := range azaks.GetAccountAzCommands() {
 		log.Println("Registering az command:", cmd.Name)
-		azTool := az.RegisterAzCommand(cmd)
-		commandExecutor := az.CreateCommandExecutorFunc(cmd.Name)
+		azTool := azaks.RegisterAzCommand(cmd)
+		commandExecutor := azcli.CreateCommandExecutorFunc(cmd.Name)
 		s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 	}
 
 	// Register read-write commands if access level is readwrite or admin
 	if s.cfg.AccessLevel == "readwrite" || s.cfg.AccessLevel == "admin" {
 		// Register read-write az commands
-		for _, cmd := range az.GetReadWriteAzCommands() {
+		for _, cmd := range azaks.GetReadWriteAzCommands() {
 			log.Println("Registering az command:", cmd.Name)
-			azTool := az.RegisterAzCommand(cmd)
-			commandExecutor := az.CreateCommandExecutorFunc(cmd.Name)
+			azTool := azaks.RegisterAzCommand(cmd)
+			commandExecutor := azcli.CreateCommandExecutorFunc(cmd.Name)
 			s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 		}
 	}
@@ -112,10 +114,10 @@ func (s *Service) registerAzCommands() {
 	// Register admin commands only if access level is admin
 	if s.cfg.AccessLevel == "admin" {
 		// Register admin az commands
-		for _, cmd := range az.GetAdminAzCommands() {
+		for _, cmd := range azaks.GetAdminAzCommands() {
 			log.Println("Registering az command:", cmd.Name)
-			azTool := az.RegisterAzCommand(cmd)
-			commandExecutor := az.CreateCommandExecutorFunc(cmd.Name)
+			azTool := azaks.RegisterAzCommand(cmd)
+			commandExecutor := azcli.CreateCommandExecutorFunc(cmd.Name)
 			s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 		}
 	}
@@ -123,7 +125,7 @@ func (s *Service) registerAzCommands() {
 
 func (s *Service) registerAzureResourceTools() {
 	// Create Azure client for the resource tools (cache is internal to the client)
-	azClient, err := azure.NewAzureClient(s.cfg)
+	azClient, err := azureclient.NewAzureClient(s.cfg)
 	if err != nil {
 		log.Printf("Warning: Failed to create Azure client: %v", err)
 		return
@@ -136,33 +138,33 @@ func (s *Service) registerAzureResourceTools() {
 }
 
 // registerNetworkTools registers all network-related Azure resource tools
-func (s *Service) registerNetworkTools(azClient *azure.AzureClient) {
+func (s *Service) registerNetworkTools(azClient *azureclient.AzureClient) {
 	log.Println("Registering Network tools...")
 
 	// Register VNet info tool
 	log.Println("Registering network tool: get_vnet_info")
-	vnetTool := resourcehandlers.RegisterVNetInfoTool()
-	s.mcpServer.AddTool(vnetTool, tools.CreateResourceHandler(resourcehandlers.GetVNetInfoHandler(azClient, s.cfg), s.cfg))
+	vnetTool := network.RegisterVNetInfoTool()
+	s.mcpServer.AddTool(vnetTool, tools.CreateResourceHandler(network.GetVNetInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register NSG info tool
 	log.Println("Registering network tool: get_nsg_info")
-	nsgTool := resourcehandlers.RegisterNSGInfoTool()
-	s.mcpServer.AddTool(nsgTool, tools.CreateResourceHandler(resourcehandlers.GetNSGInfoHandler(azClient, s.cfg), s.cfg))
+	nsgTool := network.RegisterNSGInfoTool()
+	s.mcpServer.AddTool(nsgTool, tools.CreateResourceHandler(network.GetNSGInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register RouteTable info tool
 	log.Println("Registering network tool: get_route_table_info")
-	routeTableTool := resourcehandlers.RegisterRouteTableInfoTool()
-	s.mcpServer.AddTool(routeTableTool, tools.CreateResourceHandler(resourcehandlers.GetRouteTableInfoHandler(azClient, s.cfg), s.cfg))
+	routeTableTool := network.RegisterRouteTableInfoTool()
+	s.mcpServer.AddTool(routeTableTool, tools.CreateResourceHandler(network.GetRouteTableInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register Subnet info tool
 	log.Println("Registering network tool: get_subnet_info")
-	subnetTool := resourcehandlers.RegisterSubnetInfoTool()
-	s.mcpServer.AddTool(subnetTool, tools.CreateResourceHandler(resourcehandlers.GetSubnetInfoHandler(azClient, s.cfg), s.cfg))
+	subnetTool := network.RegisterSubnetInfoTool()
+	s.mcpServer.AddTool(subnetTool, tools.CreateResourceHandler(network.GetSubnetInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register Load Balancers info tool
 	log.Println("Registering network tool: get_load_balancers_info")
-	lbTool := resourcehandlers.RegisterLoadBalancersInfoTool()
-	s.mcpServer.AddTool(lbTool, tools.CreateResourceHandler(resourcehandlers.GetLoadBalancersInfoHandler(azClient, s.cfg), s.cfg))
+	lbTool := network.RegisterLoadBalancersInfoTool()
+	s.mcpServer.AddTool(lbTool, tools.CreateResourceHandler(network.GetLoadBalancersInfoHandler(azClient, s.cfg), s.cfg))
 }
 
 // registerAdvisorTools registers all Azure Advisor-related tools
@@ -171,6 +173,6 @@ func (s *Service) registerAdvisorTools() {
 
 	// Register Azure Advisor recommendation tool (available at all access levels)
 	log.Println("Registering advisor tool: az_advisor_recommendation")
-	advisorTool := resourcehandlers.RegisterAdvisorRecommendationTool()
-	s.mcpServer.AddTool(advisorTool, tools.CreateResourceHandler(resourcehandlers.GetAdvisorRecommendationHandler(s.cfg), s.cfg))
+	advisorTool := advisor.RegisterAdvisorRecommendationTool()
+	s.mcpServer.AddTool(advisorTool, tools.CreateResourceHandler(advisor.GetAdvisorRecommendationHandler(s.cfg), s.cfg))
 }
