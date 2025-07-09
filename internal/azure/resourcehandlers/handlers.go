@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Azure/aks-mcp/internal/advisor"
 	"github.com/Azure/aks-mcp/internal/azure"
-	"github.com/Azure/aks-mcp/internal/azure/advisor"
 	"github.com/Azure/aks-mcp/internal/azure/resourcehelpers"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
