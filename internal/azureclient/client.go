@@ -1,5 +1,5 @@
 // Package azure provides Azure SDK integration for AKS MCP server.
-package azure
+package azureclient
 
 import (
 	"context"

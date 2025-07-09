@@ -1,4 +1,4 @@
-package resourcehandlers
+package network
 
 import (
 	"testing"

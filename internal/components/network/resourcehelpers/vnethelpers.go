@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/aks-mcp/internal/azure"
+	"github.com/Azure/aks-mcp/internal/azureclient"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 )
@@ -17,7 +17,7 @@ import (
 func GetVNetIDFromAKS(
 	ctx context.Context,
 	cluster *armcontainerservice.ManagedCluster,
-	client *azure.AzureClient,
+	client *azureclient.AzureClient,
 ) (string, error) {
 	// Ensure the cluster is valid
 	if cluster == nil || cluster.Properties == nil {
@@ -57,7 +57,7 @@ func GetVNetIDFromAKS(
 func findVNetInNodeResourceGroup(
 	ctx context.Context,
 	cluster *armcontainerservice.ManagedCluster,
-	client *azure.AzureClient,
+	client *azureclient.AzureClient,
 ) (string, error) {
 	// Get subscription ID and node resource group
 	subscriptionID := getSubscriptionFromCluster(cluster)

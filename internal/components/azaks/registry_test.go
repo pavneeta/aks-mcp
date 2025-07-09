@@ -1,4 +1,4 @@
-package az
+package azaks
 
 import (
 	"testing"

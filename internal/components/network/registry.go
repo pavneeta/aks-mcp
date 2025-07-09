@@ -1,4 +1,4 @@
-package resourcehandlers
+package network
 
 import (
 	"github.com/mark3labs/mcp-go/mcp"
