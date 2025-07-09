@@ -133,26 +133,6 @@ func TestRegisterMonitorCommand_WithoutArgsExample(t *testing.T) {
 	}
 }
 
-func TestReplaceSpacesWithUnderscores(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"az monitor metrics list", "az_monitor_metrics_list"},
-		{"az monitor metrics list-definitions", "az_monitor_metrics_list-definitions"},
-		{"single", "single"},
-		{"", ""},
-		{"multiple  spaces   here", "multiple__spaces___here"},
-	}
-
-	for _, test := range tests {
-		result := replaceSpacesWithUnderscores(test.input)
-		if result != test.expected {
-			t.Errorf("replaceSpacesWithUnderscores(%q) = %q, expected %q", test.input, result, test.expected)
-		}
-	}
-}
-
 func TestGetReadWriteMonitorCommands_IsEmpty(t *testing.T) {
 	commands := GetReadWriteMonitorCommands()
 

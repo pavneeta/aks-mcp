@@ -1,8 +1,7 @@
 package monitor
 
 import (
-	"strings"
-
+	"github.com/Azure/aks-mcp/internal/utils"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -14,17 +13,11 @@ type MonitorCommand struct {
 	Category    string // Category for the command (e.g., "metrics", "logs")
 }
 
-// replaceSpacesWithUnderscores converts spaces to underscores
-// to create a valid tool name that follows the [a-z0-9_-] pattern
-func replaceSpacesWithUnderscores(s string) string {
-	return strings.ReplaceAll(s, " ", "_")
-}
-
 // RegisterMonitorCommand registers a specific az monitor command as an MCP tool
 func RegisterMonitorCommand(cmd MonitorCommand) mcp.Tool {
 	// Convert spaces to underscores for valid tool name
 	commandName := cmd.Name
-	validToolName := replaceSpacesWithUnderscores(commandName)
+	validToolName := utils.ReplaceSpacesWithUnderscores(commandName)
 
 	description := "Run " + cmd.Name + " command: " + cmd.Description + "."
 
