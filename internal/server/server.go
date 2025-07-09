@@ -49,6 +49,9 @@ func (s *Service) Initialize() error {
 	// Register Azure resource tools (VNet, NSG, etc.)
 	s.registerAzureResourceTools()
 
+	// Register Azure Advisor tools
+	s.registerAdvisorTools()
+
 	return nil
 }
 
@@ -160,9 +163,6 @@ func (s *Service) registerNetworkTools(azClient *azure.AzureClient) {
 	log.Println("Registering network tool: get_load_balancers_info")
 	lbTool := resourcehandlers.RegisterLoadBalancersInfoTool()
 	s.mcpServer.AddTool(lbTool, tools.CreateResourceHandler(resourcehandlers.GetLoadBalancersInfoHandler(azClient, s.cfg), s.cfg))
-
-	// Register Azure Advisor tools
-	s.registerAdvisorTools()
 }
 
 // registerAdvisorTools registers all Azure Advisor-related tools
