@@ -69,3 +69,32 @@ func GetReadWriteMonitorCommands() []MonitorCommand {
 func GetAdminMonitorCommands() []MonitorCommand {
 	return []MonitorCommand{}
 }
+
+// RegisterResourceHealthTool registers the Azure Resource Health monitoring tool
+func RegisterResourceHealthTool() mcp.Tool {
+	return mcp.NewTool("az_monitor_activity_log_resource_health",
+		mcp.WithDescription("Retrieve resource health events for AKS clusters to monitor service availability and health status"),
+		mcp.WithString("subscription_id",
+			mcp.Required(),
+			mcp.Description("Azure subscription ID"),
+		),
+		mcp.WithString("resource_group",
+			mcp.Required(),
+			mcp.Description("Resource group name containing the AKS cluster"),
+		),
+		mcp.WithString("cluster_name",
+			mcp.Required(),
+			mcp.Description("AKS cluster name"),
+		),
+		mcp.WithString("start_time",
+			mcp.Required(),
+			mcp.Description("Start date for health event query (ISO 8601 format, e.g., \"2025-01-01T00:00:00Z\")"),
+		),
+		mcp.WithString("end_time",
+			mcp.Description("End date for health event query (defaults to current time)"),
+		),
+		mcp.WithString("status",
+			mcp.Description("Filter by health status (Available, Unavailable, Degraded, Unknown)"),
+		),
+	)
+}
