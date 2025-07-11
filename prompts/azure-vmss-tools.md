@@ -1,6 +1,6 @@
 # Azure VMSS Tools for AKS-MCP
 
-Get detailed Virtual Machine Scale Set (VMSS) information for AKS node pools - provides low-level VMSS configuration details not available through standard AKS commands.
+Get detailed Virtual Machine Scale Set (VMSS) information for AKS node pools and execute commands on VMSS instances - provides low-level VMSS configuration details and remote command execution capabilities not available through standard AKS commands.
 
 ## Tools
 
@@ -35,13 +35,35 @@ Get detailed Virtual Machine Scale Set (VMSS) information for AKS node pools - p
 - Per-node pool VMSS details or error messages
 - Complete VMSS configuration for each successfully retrieved node pool
 
+### `az_vmss_run-command_invoke`
+
+**Purpose**: Execute commands on Virtual Machine Scale Set instances (AKS node pools)
+
+**Parameters**:
+- `args` (required): Arguments for the `az vmss run-command invoke` command
+
+**Example Usage**:
+```
+--name myVMSS --resource-group myResourceGroup --command-id RunShellScript --scripts 'echo Hello World' --instance-ids 0 1
+```
+
+**Returns**: Command execution results from the specified VMSS instances:
+- Exit codes and status for each instance
+- Command output (stdout/stderr)
+- Execution timestamps and duration
+- Error messages if command fails
+
+**Access Level**: Requires `readwrite` or `admin` access level
+
 ## Key Use Cases
 
 1. **Troubleshooting Node Issues**: Get detailed VM configuration when nodes aren't behaving as expected
-2. **Security Auditing**: Review VM extensions, security settings, and network configurations
-3. **Performance Analysis**: Check VM sizes, storage types, and networking setup
-4. **Compliance Checking**: Verify OS images, patches, and security configurations
-5. **Resource Planning**: Understand current VM configurations for capacity planning
+2. **Remote Command Execution**: Execute diagnostic commands, collect logs, or perform maintenance tasks on AKS nodes
+3. **Security Auditing**: Review VM extensions, security settings, and network configurations
+4. **Performance Analysis**: Check VM sizes, storage types, and networking setup
+5. **Compliance Checking**: Verify OS images, patches, and security configurations
+6. **Resource Planning**: Understand current VM configurations for capacity planning
+7. **Node Maintenance**: Run scripts to update configurations, restart services, or apply patches
 
 ## What You Get vs Standard AKS Commands
 
@@ -58,6 +80,7 @@ Get detailed Virtual Machine Scale Set (VMSS) information for AKS node pools - p
 - Load balancer backend pool memberships
 - Detailed OS and image information
 - Scaling and upgrade policies
+- Remote command execution on VMSS instances
 
 ## Code Structure
 
@@ -65,8 +88,9 @@ Get detailed Virtual Machine Scale Set (VMSS) information for AKS node pools - p
 ```
 internal/components/compute/
 ├── handlers.go           # Tool handlers for VMSS operations
-├── registry.go          # Tool registration and MCP definitions
+├── registry.go          # Tool registration and MCP definitions  
 ├── vmsshelpers.go       # Helper functions for VMSS operations
+├── azcommands.go        # Az CLI command definitions for VMSS
 └── handlers_test.go     # Unit tests for handlers
 ```
 
@@ -92,6 +116,28 @@ func RegisterAllVMSSByClusterTool() mcp.Tool {
         mcp.WithString("resource_group", mcp.Required()),
         mcp.WithString("cluster_name", mcp.Required()),
     )
+}
+```
+
+### Az CLI Command Registration
+VMSS az CLI commands are defined in `internal/components/compute/azcommands.go`:
+```go
+func RegisterAzComputeCommand(cmd ComputeCommand) mcp.Tool {
+    validToolName := utils.ReplaceSpacesWithUnderscores(cmd.Name)
+    description := "Run " + cmd.Name + " command: " + cmd.Description + "."
+    
+    return mcp.NewTool(validToolName,
+        mcp.WithDescription(description),
+        mcp.WithString("args", mcp.Required()),
+    )
+}
+
+func GetReadWriteVmssCommands() []ComputeCommand {
+    return []ComputeCommand{
+        {Name: "az vmss run-command invoke", 
+         Description: "...", 
+         ArgsExample: "..."},
+    }
 }
 ```
 
