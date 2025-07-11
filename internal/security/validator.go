@@ -56,6 +56,7 @@ var (
 		"az monitor metrics list",
 		"az monitor metrics list-definitions",
 		"az monitor metrics list-namespaces",
+		"az monitor activity-log list",
 
 		// Other general commands
 		"az find",

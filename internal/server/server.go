@@ -101,6 +101,11 @@ func (s *Service) registerAzCommands() {
 		s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 	}
 
+	// Register Azure Resource Health monitoring tool (available at all access levels)
+	log.Println("Registering monitor tool: az_monitor_activity_log_resource_health")
+	resourceHealthTool := monitor.RegisterResourceHealthTool()
+	s.mcpServer.AddTool(resourceHealthTool, tools.CreateResourceHandler(monitor.GetResourceHealthHandler(s.cfg), s.cfg))
+
 	// Register account management commands (available at all access levels)
 	for _, cmd := range azaks.GetAccountAzCommands() {
 		log.Println("Registering az command:", cmd.Name)
