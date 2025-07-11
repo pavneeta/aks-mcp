@@ -103,7 +103,7 @@ func (s *Service) registerAzCommands() {
 	}
 
 	// Register generic az fleet tool (available at all access levels)
-	log.Println("Registering az fleet tool: az-fleet")
+	log.Println("Registering az fleet tool: az_fleet")
 	fleetTool := fleet.RegisterFleet()
 	s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewExecutor(), s.cfg))
 
