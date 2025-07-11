@@ -58,6 +58,16 @@ var (
 		"az monitor metrics list-namespaces",
 		"az monitor activity-log list",
 
+		// Azure Fleet commands (read-only)
+		"az fleet list",
+		"az fleet show",
+		"az fleet member list",
+		"az fleet member show",
+		"az fleet updaterun list",
+		"az fleet updaterun show",
+		"az fleet updatestrategy list",
+		"az fleet updatestrategy show",
+
 		// Other general commands
 		"az find",
 		"az version",
