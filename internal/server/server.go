@@ -8,6 +8,7 @@ import (
 	"github.com/Azure/aks-mcp/internal/azureclient"
 	"github.com/Azure/aks-mcp/internal/components/advisor"
 	"github.com/Azure/aks-mcp/internal/components/azaks"
+	"github.com/Azure/aks-mcp/internal/components/fleet"
 	"github.com/Azure/aks-mcp/internal/components/detectors"
 	"github.com/Azure/aks-mcp/internal/components/monitor"
 	"github.com/Azure/aks-mcp/internal/components/network"
@@ -102,6 +103,11 @@ func (s *Service) registerAzCommands() {
 		s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 	}
 
+	// Register generic az fleet tool (available at all access levels)
+	log.Println("Registering az fleet tool: az_fleet")
+	fleetTool := fleet.RegisterFleet()
+	s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewExecutor(), s.cfg))
+
 	// Register Azure Resource Health monitoring tool (available at all access levels)
 	log.Println("Registering monitor tool: az_monitor_activity_log_resource_health")
 	resourceHealthTool := monitor.RegisterResourceHealthTool()
@@ -132,6 +138,9 @@ func (s *Service) registerAzCommands() {
 			commandExecutor := azcli.CreateCommandExecutorFunc(cmd.Name)
 			s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 		}
+
+		// Fleet commands are handled by the generic az fleet tool registered above
+		// No additional registration needed for read-write access
 	}
 
 	// Register admin commands only if access level is admin
@@ -151,6 +160,9 @@ func (s *Service) registerAzCommands() {
 			commandExecutor := azcli.CreateCommandExecutorFunc(cmd.Name)
 			s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 		}
+
+		// Fleet commands are handled by the generic az fleet tool registered above
+		// No additional registration needed for admin access
 	}
 }
 
