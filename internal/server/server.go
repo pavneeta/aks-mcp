@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/aks-mcp/internal/components/advisor"
 	"github.com/Azure/aks-mcp/internal/components/azaks"
 	"github.com/Azure/aks-mcp/internal/components/fleet"
+	"github.com/Azure/aks-mcp/internal/components/detectors"
 	"github.com/Azure/aks-mcp/internal/components/monitor"
 	"github.com/Azure/aks-mcp/internal/components/network"
 	"github.com/Azure/aks-mcp/internal/config"
@@ -176,6 +177,9 @@ func (s *Service) registerAzureResourceTools() {
 	// Register Network-related tools
 	s.registerNetworkTools(azClient)
 
+	// Register Detector tools
+	s.registerDetectorTools(azClient)
+
 	// TODO: Add other resource categories in the future:
 }
 
@@ -207,6 +211,26 @@ func (s *Service) registerNetworkTools(azClient *azureclient.AzureClient) {
 	log.Println("Registering network tool: get_load_balancers_info")
 	lbTool := network.RegisterLoadBalancersInfoTool()
 	s.mcpServer.AddTool(lbTool, tools.CreateResourceHandler(network.GetLoadBalancersInfoHandler(azClient, s.cfg), s.cfg))
+}
+
+// registerDetectorTools registers all detector-related Azure resource tools
+func (s *Service) registerDetectorTools(azClient *azureclient.AzureClient) {
+	log.Println("Registering Detector tools...")
+
+	// Register list detectors tool
+	log.Println("Registering detector tool: list_detectors")
+	listTool := detectors.RegisterListDetectorsTool()
+	s.mcpServer.AddTool(listTool, tools.CreateResourceHandler(detectors.GetListDetectorsHandler(azClient, s.cfg), s.cfg))
+
+	// Register run detector tool
+	log.Println("Registering detector tool: run_detector")
+	runTool := detectors.RegisterRunDetectorTool()
+	s.mcpServer.AddTool(runTool, tools.CreateResourceHandler(detectors.GetRunDetectorHandler(azClient, s.cfg), s.cfg))
+
+	// Register run detectors by category tool
+	log.Println("Registering detector tool: run_detectors_by_category")
+	categoryTool := detectors.RegisterRunDetectorsByCategoryTool()
+	s.mcpServer.AddTool(categoryTool, tools.CreateResourceHandler(detectors.GetRunDetectorsByCategoryHandler(azClient, s.cfg), s.cfg))
 }
 
 // registerAdvisorTools registers all Azure Advisor-related tools

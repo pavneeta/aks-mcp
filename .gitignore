@@ -409,3 +409,7 @@ PULL_REQUEST_TEMPLATE.md
 
 # PowerShell scripts for development/debugging
 *.ps1
+# Build artifacts
+dist/
+coverage.txt
+coverage.out
