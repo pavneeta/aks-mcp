@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -63,7 +64,11 @@ func ParseAKSResourceID(resourceID string) (subscriptionID, resourceGroup, clust
 
 // HandleDetectorAPIResponse reads and handles the response from detector API calls
 func HandleDetectorAPIResponse(resp *http.Response) ([]byte, error) {
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Warning: failed to close response body: %v", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
