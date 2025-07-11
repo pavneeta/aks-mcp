@@ -324,3 +324,8 @@ func (c *AzureClient) GetResourceByID(ctx context.Context, resourceID string) (i
 		return nil, fmt.Errorf("unsupported resource type: %s", parsed.ResourceType)
 	}
 }
+
+// GetCache returns the Azure cache instance
+func (c *AzureClient) GetCache() *AzureCache {
+	return c.cache
+}
