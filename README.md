@@ -173,6 +173,15 @@ The AKS-MCP server provides the following tools for interacting with AKS cluster
 - `get_nsg_info`: Get information about the network security groups used by the AKS cluster
 </details>
 
+<details>
+<summary>Fleet Tools</summary>
+
+- `az_fleet`: Execute Azure Fleet commands with structured parameters for AKS Fleet management
+  - Supports operations: list, show, create, update, delete, start, stop
+  - Supports resources: fleet, member, updaterun, updatestrategy
+  - Requires readwrite or admin access for write operations
+</details>
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
