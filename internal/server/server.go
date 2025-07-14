@@ -103,10 +103,10 @@ func (s *Service) registerAzCommands() {
 		s.mcpServer.AddTool(azTool, tools.CreateToolHandler(commandExecutor, s.cfg))
 	}
 
-	// Register generic az fleet tool (available at all access levels)
+	// Register generic az fleet tool with structured parameters (available at all access levels)
 	log.Println("Registering az fleet tool: az_fleet")
 	fleetTool := fleet.RegisterFleet()
-	s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewExecutor(), s.cfg))
+	s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewFleetExecutor(), s.cfg))
 
 	// Register Azure Resource Health monitoring tool (available at all access levels)
 	log.Println("Registering monitor tool: az_monitor_activity_log_resource_health")

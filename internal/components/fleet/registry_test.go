@@ -1,6 +1,7 @@
 package fleet
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -74,6 +75,37 @@ func TestRegisterFleetCommand_BasicCommands(t *testing.T) {
 
 	if tool2.Description == "" {
 		t.Error("Expected tool description to be set")
+	}
+}
+
+func TestRegisterFleet_StructuredParameters(t *testing.T) {
+	tool := RegisterFleet()
+
+	// Test that the tool has the correct name
+	if tool.Name != "az_fleet" {
+		t.Errorf("Expected tool name 'az_fleet', got '%s'", tool.Name)
+	}
+
+	// Test that the description contains important information
+	description := tool.Description
+	if !strings.Contains(description, "fleet: list, show, create, update, delete") {
+		t.Error("Expected description to contain fleet operations")
+	}
+	if !strings.Contains(description, "member: list, show, create, update, delete") {
+		t.Error("Expected description to contain member operations")
+	}
+	if !strings.Contains(description, "updaterun: list, show, create, start, stop, delete") {
+		t.Error("Expected description to contain updaterun operations")
+	}
+	if !strings.Contains(description, "Examples:") {
+		t.Error("Expected description to contain examples")
+	}
+
+	// Test that the tool has the required parameters
+	// Note: We can't directly test the parameters without access to the tool's internal structure
+	// but we can verify that the tool was created successfully
+	if tool.Handler == nil {
+		t.Error("Expected tool to have a handler")
 	}
 }
 
