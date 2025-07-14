@@ -104,8 +104,8 @@ func TestRegisterFleet_StructuredParameters(t *testing.T) {
 	// Test that the tool has the required parameters
 	// Note: We can't directly test the parameters without access to the tool's internal structure
 	// but we can verify that the tool was created successfully
-	if tool.Handler == nil {
-		t.Error("Expected tool to have a handler")
+	if tool.Name == "" {
+		t.Error("Expected tool to have a name")
 	}
 }
 
