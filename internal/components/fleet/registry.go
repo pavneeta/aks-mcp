@@ -12,13 +12,34 @@ type FleetCommand struct {
 	ArgsExample string // Example of command arguments
 }
 
-// RegisterFleet registers the generic az fleet tool
+// RegisterFleet registers the generic az fleet tool with structured parameters
 func RegisterFleet() mcp.Tool {
+	description := `Run Azure Kubernetes Service Fleet management commands.
+
+Available operations and resources:
+- fleet: list, show, create, update, delete
+- member: list, show, create, update, delete  
+- updaterun: list, show, create, start, stop, delete
+- updatestrategy: list, show, create, delete
+
+Examples:
+- List fleets: operation='list', resource='fleet', args='--resource-group myRG'
+- Show fleet: operation='show', resource='fleet', args='--name myFleet --resource-group myRG'
+- Create member: operation='create', resource='member', args='--name myMember --fleet-name myFleet --resource-group myRG --member-cluster-id /subscriptions/.../myCluster'`
+
 	return mcp.NewTool("az_fleet",
-		mcp.WithDescription("Run az fleet commands for Azure Kubernetes Service Fleet management"),
-		mcp.WithString("command",
+		mcp.WithDescription(description),
+		mcp.WithString("operation",
 			mcp.Required(),
-			mcp.Description("The az fleet command to execute (e.g., 'az fleet list', 'az fleet show --name myFleet --resource-group myRG')"),
+			mcp.Description("The operation to perform. Valid values: list, show, create, update, delete, start, stop"),
+		),
+		mcp.WithString("resource",
+			mcp.Required(),
+			mcp.Description("The resource type to operate on. Valid values: fleet, member, updaterun, updatestrategy"),
+		),
+		mcp.WithString("args",
+			mcp.Required(),
+			mcp.Description("Additional arguments for the command (e.g., '--name myFleet --resource-group myRG')"),
 		),
 	)
 }

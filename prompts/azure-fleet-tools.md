@@ -11,16 +11,32 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
 ### Generic Fleet Tool
 
 #### `az_fleet`
-**Purpose**: Execute any Azure Fleet command for AKS Fleet management
+**Purpose**: Execute Azure Fleet commands for AKS Fleet management with structured parameters
 
 **Parameters**:
-- `command` (required): The complete az fleet command to execute
+- `operation` (required): The operation to perform (list, show, create, update, delete, start, stop)
+- `resource` (required): The resource type to operate on (fleet, member, updaterun, updatestrategy)
+- `args` (required): Additional arguments for the command
 
 **Example Usage**:
-```bash
-az fleet list --resource-group myResourceGroup
-az fleet show --name myFleet --resource-group myResourceGroup
-az fleet create --name myFleet --resource-group myResourceGroup --location eastus
+```json
+{
+  "operation": "list",
+  "resource": "fleet",
+  "args": "--resource-group myResourceGroup"
+}
+
+{
+  "operation": "show",
+  "resource": "fleet", 
+  "args": "--name myFleet --resource-group myResourceGroup"
+}
+
+{
+  "operation": "create",
+  "resource": "fleet",
+  "args": "--name myFleet --resource-group myResourceGroup --location eastus"
+}
 ```
 
 ## Fleet Command Categories
@@ -76,13 +92,17 @@ az fleet create --name myFleet --resource-group myResourceGroup --location eastu
 internal/components/fleet/
 ├── registry.go          # Fleet tool registration and command definitions
 └── registry_test.go     # Unit tests for the registry
+
+internal/azcli/
+├── fleet_executor.go    # Specialized fleet command executor with parameter validation
+└── fleet_executor_test.go # Unit tests for the fleet executor
 ```
 
 ### Tool Registration
 A single generic fleet tool is registered in the MCP server:
-- **Generic Tool**: `az_fleet` - Accepts any fleet command through the "command" parameter
+- **Generic Tool**: `az_fleet` - Accepts structured parameters: operation, resource, and args
 - **Access Control**: Commands are validated against the configured access level through security validation
-- **Execution**: Uses the generic `azcli.NewExecutor()` for command execution
+- **Execution**: Uses the specialized `azcli.NewFleetExecutor()` for command execution and parameter validation
 
 ### Fleet Command Structure
 Fleet commands are organized using the `FleetCommand` structure for documentation:
@@ -97,10 +117,10 @@ type FleetCommand struct {
 ### Integration with Server
 The fleet tool is registered in `internal/server/server.go`:
 ```go
-// Register generic az fleet tool (available at all access levels)
+// Register generic az fleet tool with structured parameters (available at all access levels)
 log.Println("Registering az fleet tool: az_fleet")
 fleetTool := fleet.RegisterFleet()
-s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewExecutor(), s.cfg))
+s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewFleetExecutor(), s.cfg))
 ```
 
 ## Access Level Requirements
@@ -179,12 +199,14 @@ az fleet updatestrategy list --fleet-name myFleet --resource-group myResourceGro
 
 ## Error Handling
 
-The fleet tools leverage the existing error handling infrastructure:
+The fleet tools leverage enhanced error handling infrastructure:
 - Azure CLI authentication errors are handled gracefully
 - Invalid fleet or member names return descriptive error messages
 - Network connectivity issues are properly reported
 - Malformed arguments are validated before execution
 - Access level violations are caught by security validation
+- **Parameter Validation**: Operation/resource combinations are validated (e.g., 'start' is only valid for 'updaterun')
+- **Access Level Enforcement**: Read-only operations (list, show) are allowed at all access levels, while write operations require readwrite or admin access
 
 ## Security and Access Control
 
@@ -201,12 +223,20 @@ Fleet commands are subject to the same security validation as other Azure CLI co
 "Please show me all fleets in my production resource group"
 
 This would translate to:
-az_fleet with command: "az fleet list --resource-group production"
+az_fleet with parameters: {
+  "operation": "list",
+  "resource": "fleet", 
+  "args": "--resource-group production"
+}
 
 "Add the cluster 'web-cluster' to my fleet 'prod-fleet'"
 
 This would translate to:
-az_fleet with command: "az fleet member create --name web-cluster --fleet-name prod-fleet --resource-group production --member-cluster-id /subscriptions/.../managedClusters/web-cluster"
+az_fleet with parameters: {
+  "operation": "create",
+  "resource": "member",
+  "args": "--name web-cluster --fleet-name prod-fleet --resource-group production --member-cluster-id /subscriptions/.../managedClusters/web-cluster"
+}
 ```
 
 ## Requirements
@@ -260,6 +290,9 @@ Configure command execution timeout:
 - Cross-region fleet management
 - Integration with GitOps workflows
 - Fleet monitoring and alerting
+- **Enhanced Parameter Validation**: More granular validation of command arguments
+- **Smart Defaults**: Automatic parameter inference based on context
+- **Batch Operations**: Support for bulk fleet operations
 
 ## Best Practices
 
