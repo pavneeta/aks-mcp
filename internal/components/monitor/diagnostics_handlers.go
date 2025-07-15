@@ -3,6 +3,7 @@ package monitor
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -99,6 +100,9 @@ func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigDat
 	// Build command string with proper quoting for the KQL query
 	cmd := fmt.Sprintf("az monitor log-analytics query --workspace %s --analytics-query \"%s\" --timespan %s --output json",
 		workspaceGUID, kqlQuery, timespan)
+
+	// Log the query command for debugging
+	log.Printf("Executing KQL query command: %s", cmd)
 
 	cmdParams := map[string]interface{}{
 		"command": cmd,
