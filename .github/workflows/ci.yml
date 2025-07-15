@@ -9,9 +9,38 @@ on:
       - main
 
 jobs:
+  format-and-vet:
+    name: Format and Vet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+          cache: true
+      
+      - name: Check formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "The following files are not formatted correctly:"
+            gofmt -s -l .
+            echo "Please run 'go fmt ./...' to fix formatting issues."
+            exit 1
+          fi
+      
+      - name: Run go vet
+        run: go vet ./...
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: [format-and-vet]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
@@ -34,6 +63,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs: [format-and-vet]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
