@@ -57,18 +57,6 @@ func HandleControlPlaneDiagnosticSettings(params map[string]interface{}, cfg *co
 	return result, nil
 }
 
-// HandleControlPlaneLogCategories lists enabled log categories
-func HandleControlPlaneLogCategories(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
-	// First get diagnostic settings (raw JSON)
-	diagnosticResult, err := HandleControlPlaneDiagnosticSettings(params, cfg)
-	if err != nil {
-		return "", err
-	}
-
-	// Parse only to extract enabled log categories, then return simplified JSON
-	return extractAndFormatLogCategories(diagnosticResult)
-}
-
 // HandleControlPlaneLogs queries specific control plane logs
 func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
 	// Extract and validate all parameters
@@ -126,95 +114,6 @@ func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigDat
 }
 
 // Helper functions for control plane diagnostics
-
-func extractAndFormatLogCategories(diagnosticSettingsJSON string) (string, error) {
-	// Parse diagnostic settings JSON to extract just the enabled log categories
-	var parsed interface{}
-	if err := json.Unmarshal([]byte(diagnosticSettingsJSON), &parsed); err != nil {
-		return "", fmt.Errorf("failed to parse diagnostic settings JSON: %w", err)
-	}
-
-	categories := make([]map[string]interface{}, 0)
-
-	// Handle both array and object formats
-	var settings []interface{}
-	
-	// Check if it's an array (direct diagnostic settings response)
-	if settingsArray, ok := parsed.([]interface{}); ok {
-		settings = settingsArray
-	} else if parsedObj, ok := parsed.(map[string]interface{}); ok {
-		// Check if it's wrapped in a "value" property
-		if value, ok := parsedObj["value"].([]interface{}); ok {
-			settings = value
-		}
-	}
-
-	// Extract log categories from the first diagnostic setting
-	if len(settings) > 0 {
-		if setting, ok := settings[0].(map[string]interface{}); ok {
-			if logs, ok := setting["logs"].([]interface{}); ok {
-				for _, logItem := range logs {
-					if log, ok := logItem.(map[string]interface{}); ok {
-						category := map[string]interface{}{
-							"category":    log["category"],
-							"enabled":     log["enabled"],
-							"description": getLogCategoryDescription(log["category"]),
-						}
-						categories = append(categories, category)
-					}
-				}
-			}
-		}
-	}
-
-	// Convert to JSON and return
-	categoriesJSON, err := json.MarshalIndent(map[string]interface{}{
-		"enabled_log_categories": categories,
-	}, "", "  ")
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal log categories: %w", err)
-	}
-
-	return string(categoriesJSON), nil
-}
-
-func getLogCategoryDescription(category interface{}) string {
-	if categoryStr, ok := category.(string); ok {
-		switch categoryStr {
-		case "kube-apiserver":
-			return "Kubernetes API server logs"
-		case "kube-audit":
-			return "Kubernetes audit logs"
-		case "kube-audit-admin":
-			return "Admin audit logs"
-		case "kube-controller-manager":
-			return "Controller manager logs"
-		case "kube-scheduler":
-			return "Scheduler logs"
-		case "cluster-autoscaler":
-			return "Cluster autoscaler logs"
-		case "cloud-controller-manager":
-			return "Cloud controller manager logs"
-		case "guard":
-			return "Azure AD guard logs"
-		case "csi-azuredisk-controller":
-			return "Azure Disk CSI controller logs"
-		case "csi-azurefile-controller":
-			return "Azure File CSI controller logs"
-		case "csi-snapshot-controller":
-			return "CSI snapshot controller logs"
-		case "fleet-member-agent":
-			return "Fleet member agent logs"
-		case "fleet-member-net-controller-manager":
-			return "Fleet member network controller manager logs"
-		case "fleet-mcs-controller-manager":
-			return "Fleet multi-cluster service controller manager logs"
-		default:
-			return "Control plane component logs"
-		}
-	}
-	return "Unknown log category"
-}
 
 func validateControlPlaneLogsParams(params map[string]interface{}) error {
 	// Validate required parameters
@@ -486,13 +385,6 @@ func getWorkspaceGUID(workspaceResourceID string, cfg *config.ConfigData) (strin
 func GetControlPlaneDiagnosticSettingsHandler(cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		return HandleControlPlaneDiagnosticSettings(params, cfg)
-	})
-}
-
-// GetControlPlaneLogCategoriesHandler returns handler for log categories tool
-func GetControlPlaneLogCategoriesHandler(cfg *config.ConfigData) tools.ResourceHandler {
-	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
-		return HandleControlPlaneLogCategories(params, cfg)
 	})
 }
 

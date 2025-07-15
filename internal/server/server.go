@@ -60,7 +60,7 @@ func (s *Service) Initialize() error {
 	
 	// Register AKS Control Plane tools
 	s.registerControlPlaneTools()
-	
+
 	return nil
 }
 
@@ -178,11 +178,6 @@ func (s *Service) registerControlPlaneTools() {
 	log.Println("Registering control plane tool: aks_control_plane_diagnostic_settings")
 	diagnosticTool := monitor.RegisterControlPlaneDiagnosticSettingsTool()
 	s.mcpServer.AddTool(diagnosticTool, tools.CreateResourceHandler(monitor.GetControlPlaneDiagnosticSettingsHandler(s.cfg), s.cfg))
-
-	// Register log categories tool
-	log.Println("Registering control plane tool: aks_control_plane_log_categories")
-	categoriesTool := monitor.RegisterControlPlaneLogCategoriesTool()
-	s.mcpServer.AddTool(categoriesTool, tools.CreateResourceHandler(monitor.GetControlPlaneLogCategoriesHandler(s.cfg), s.cfg))
 
 	// Register logs querying tool
 	log.Println("Registering control plane tool: aks_control_plane_logs")

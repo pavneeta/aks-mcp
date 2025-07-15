@@ -132,25 +132,6 @@ func RegisterControlPlaneDiagnosticSettingsTool() mcp.Tool {
 	)
 }
 
-// RegisterControlPlaneLogCategoriesTool registers the log categories listing tool
-func RegisterControlPlaneLogCategoriesTool() mcp.Tool {
-	return mcp.NewTool("aks_control_plane_log_categories",
-		mcp.WithDescription("List enabled AKS control plane log categories from diagnostic settings"),
-		mcp.WithString("subscription_id",
-			mcp.Required(),
-			mcp.Description("Azure subscription ID"),
-		),
-		mcp.WithString("resource_group",
-			mcp.Required(),
-			mcp.Description("Resource group name containing the AKS cluster"),
-		),
-		mcp.WithString("cluster_name",
-			mcp.Required(),
-			mcp.Description("AKS cluster name"),
-		),
-	)
-}
-
 // RegisterControlPlaneLogsTool registers the logs querying tool
 func RegisterControlPlaneLogsTool() mcp.Tool {
 	return mcp.NewTool("aks_control_plane_logs",
@@ -169,7 +150,7 @@ func RegisterControlPlaneLogsTool() mcp.Tool {
 		),
 		mcp.WithString("log_category",
 			mcp.Required(),
-			mcp.Description("Control plane log category (kube-apiserver, kube-audit, kube-controller-manager, kube-scheduler, cluster-autoscaler, cloud-controller-manager)"),
+			mcp.Description("Control plane log category (kube-apiserver, kube-audit, kube-audit-admin, kube-controller-manager, kube-scheduler, cluster-autoscaler, cloud-controller-manager, guard, csi-azuredisk-controller, csi-azurefile-controller, csi-snapshot-controller, fleet-member-agent, fleet-member-net-controller-manager, fleet-mcs-controller-manager)"),
 		),
 		mcp.WithString("start_time",
 			mcp.Required(),
