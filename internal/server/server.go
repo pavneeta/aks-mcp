@@ -241,15 +241,10 @@ func (s *Service) registerDetectorTools(azClient *azureclient.AzureClient) {
 func (s *Service) registerComputeTools(azClient *azureclient.AzureClient) {
 	log.Println("Registering Compute tools...")
 
-	// Register VMSS info by node pool tool
-	log.Println("Registering compute tool: get_vmss_info_by_node_pool")
-	vmssInfoTool := compute.RegisterVMSSInfoByNodePoolTool()
-	s.mcpServer.AddTool(vmssInfoTool, tools.CreateResourceHandler(compute.GetVMSSInfoByNodePoolHandler(azClient, s.cfg), s.cfg))
-
-	// Register all VMSS by cluster tool
-	log.Println("Registering compute tool: get_all_vmss_by_cluster")
-	allVmssTool := compute.RegisterAllVMSSByClusterTool()
-	s.mcpServer.AddTool(allVmssTool, tools.CreateResourceHandler(compute.GetAllVMSSByClusterHandler(azClient, s.cfg), s.cfg))
+	// Register AKS VMSS info tool (supports both single node pool and all node pools)
+	log.Println("Registering compute tool: get_aks_vmss_info")
+	vmssInfoTool := compute.RegisterAKSVMSSInfoTool()
+	s.mcpServer.AddTool(vmssInfoTool, tools.CreateResourceHandler(compute.GetAKSVMSSInfoHandler(azClient, s.cfg), s.cfg))
 
 	// Register read-only az vmss commands (available at all access levels)
 	for _, cmd := range compute.GetReadOnlyVmssCommands() {

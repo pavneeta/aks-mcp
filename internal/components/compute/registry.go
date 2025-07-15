@@ -6,11 +6,11 @@ import (
 
 // Compute-related tool registrations
 
-// RegisterVMSSInfoByNodePoolTool registers the get_vmss_info_by_node_pool tool
-func RegisterVMSSInfoByNodePoolTool() mcp.Tool {
+// RegisterAKSVMSSInfoTool registers the get_aks_vmss_info tool
+func RegisterAKSVMSSInfoTool() mcp.Tool {
 	return mcp.NewTool(
-		"get_vmss_info_by_node_pool",
-		mcp.WithDescription("Get detailed VMSS configuration for a specific node pool (provides low-level VMSS settings not available in az aks nodepool show)"),
+		"get_aks_vmss_info",
+		mcp.WithDescription("Get detailed VMSS configuration for a specific node pool or all node pools in the AKS cluster (provides low-level VMSS settings not available in az aks nodepool show). Leave node_pool_name empty to get info for all node pools."),
 		mcp.WithString("subscription_id",
 			mcp.Description("Azure Subscription ID"),
 			mcp.Required(),
@@ -24,28 +24,7 @@ func RegisterVMSSInfoByNodePoolTool() mcp.Tool {
 			mcp.Required(),
 		),
 		mcp.WithString("node_pool_name",
-			mcp.Description("Name of the node pool to get VMSS information for"),
-			mcp.Required(),
-		),
-	)
-}
-
-// RegisterAllVMSSByClusterTool registers the get_all_vmss_by_cluster tool
-func RegisterAllVMSSByClusterTool() mcp.Tool {
-	return mcp.NewTool(
-		"get_all_vmss_by_cluster",
-		mcp.WithDescription("Get detailed VMSS configuration and properties for all node pools in the AKS cluster (complements az aks nodepool commands with low-level VMSS details)"),
-		mcp.WithString("subscription_id",
-			mcp.Description("Azure Subscription ID"),
-			mcp.Required(),
-		),
-		mcp.WithString("resource_group",
-			mcp.Description("Azure Resource Group containing the AKS cluster"),
-			mcp.Required(),
-		),
-		mcp.WithString("cluster_name",
-			mcp.Description("Name of the AKS cluster"),
-			mcp.Required(),
+			mcp.Description("Name of the node pool to get VMSS information for. Leave empty to get info for all node pools."),
 		),
 	)
 }
