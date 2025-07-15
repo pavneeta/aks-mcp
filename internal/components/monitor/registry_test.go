@@ -7,8 +7,8 @@ import (
 func TestGetReadOnlyMonitorCommands_ContainsMetricsCommands(t *testing.T) {
 	commands := GetReadOnlyMonitorCommands()
 
-	// Verify we have the expected number of commands
-	expectedCommands := 3
+	// Verify we have the expected number of commands (3 original metrics + 2 new diagnostics = 5)
+	expectedCommands := 5
 	if len(commands) != expectedCommands {
 		t.Errorf("Expected %d read-only commands, got %d", expectedCommands, len(commands))
 	}
