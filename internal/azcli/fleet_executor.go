@@ -89,7 +89,7 @@ func (e *FleetExecutor) validateCombination(operation, resource string) error {
 		}
 	}
 
-	return fmt.Errorf("invalid operation '%s' for resource '%s'. Valid operations: %s", 
+	return fmt.Errorf("invalid operation '%s' for resource '%s'. Valid operations: %s",
 		operation, resource, strings.Join(validOps, ", "))
 }
 
@@ -118,10 +118,10 @@ func (e *FleetExecutor) GetCommandForValidation(operation, resource, args string
 	if operation == "list" && resource == "fleet" {
 		command = "az fleet list"
 	}
-	
+
 	if args != "" {
 		command = fmt.Sprintf("%s %s", command, args)
 	}
-	
+
 	return command
 }
