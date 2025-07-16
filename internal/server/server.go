@@ -12,6 +12,7 @@ import (
 	"github.com/Azure/aks-mcp/internal/components/detectors"
 	"github.com/Azure/aks-mcp/internal/components/fleet"
 	"github.com/Azure/aks-mcp/internal/components/monitor"
+	"github.com/Azure/aks-mcp/internal/components/monitor/diagnostics"
 	"github.com/Azure/aks-mcp/internal/components/network"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
@@ -177,12 +178,12 @@ func (s *Service) registerControlPlaneTools() {
 	// Register diagnostic settings tool
 	log.Println("Registering control plane tool: aks_control_plane_diagnostic_settings")
 	diagnosticTool := monitor.RegisterControlPlaneDiagnosticSettingsTool()
-	s.mcpServer.AddTool(diagnosticTool, tools.CreateResourceHandler(monitor.GetControlPlaneDiagnosticSettingsHandler(s.cfg), s.cfg))
+	s.mcpServer.AddTool(diagnosticTool, tools.CreateResourceHandler(diagnostics.GetControlPlaneDiagnosticSettingsHandler(s.cfg), s.cfg))
 
 	// Register logs querying tool
 	log.Println("Registering control plane tool: aks_control_plane_logs")
 	logsTool := monitor.RegisterControlPlaneLogsTool()
-	s.mcpServer.AddTool(logsTool, tools.CreateResourceHandler(monitor.GetControlPlaneLogsHandler(s.cfg), s.cfg))
+	s.mcpServer.AddTool(logsTool, tools.CreateResourceHandler(diagnostics.GetControlPlaneLogsHandler(s.cfg), s.cfg))
 }
 
 func (s *Service) registerAzureResourceTools() {
