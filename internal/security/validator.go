@@ -132,6 +132,13 @@ func (v *Validator) ValidateCommand(command, commandType string) error {
 
 // validateCommandInjection checks for command injection patterns
 func (v *Validator) validateCommandInjection(command string) error {
+	// Special handling for KQL queries in az monitor log-analytics query commands
+	if strings.Contains(command, "az monitor log-analytics query") && strings.Contains(command, "--analytics-query") {
+		// For KQL queries, we allow pipes within the quoted analytics-query parameter
+		// but still validate the rest of the command
+		return v.validateKQLCommand(command)
+	}
+
 	// Check if this contains a here document operator
 	containsHereDoc := strings.Contains(command, "<<")
 
@@ -337,4 +344,88 @@ func (v *Validator) isCompleteHereDocument(command string) bool {
 	return false
 }
 
-// isReadOperation determines if a command is a read-only operation
+// validateKQLCommand validates az logs query commands with KQL analytics queries
+func (v *Validator) validateKQLCommand(command string) error {
+	// Extract the parts of the command outside the analytics-query parameter
+	// and validate those parts separately
+
+	// Split the command to isolate the KQL query
+	parts := strings.Split(command, "--analytics-query")
+	if len(parts) != 2 {
+		return &ValidationError{Message: "Error: Invalid az logs query command structure"}
+	}
+
+	beforeQuery := parts[0]
+	afterQuery := parts[1]
+
+	// Validate the command structure before the analytics-query
+	if err := v.validateCommandParts(beforeQuery); err != nil {
+		return err
+	}
+
+	// Extract and validate the rest of the command after the KQL query
+	// The afterQuery should start with the quoted KQL, followed by other parameters
+	afterQuery = strings.TrimSpace(afterQuery)
+	if len(afterQuery) == 0 {
+		return &ValidationError{Message: "Error: Missing KQL query in analytics-query parameter"}
+	}
+
+	// Find the end of the quoted KQL query
+	if afterQuery[0] == '"' {
+		// Find the closing quote (simple approach - assumes no escaped quotes in KQL)
+		closeQuoteIndex := strings.Index(afterQuery[1:], "\"")
+		if closeQuoteIndex == -1 {
+			return &ValidationError{Message: "Error: Unclosed quote in analytics-query parameter"}
+		}
+
+		// Validate any parameters after the KQL query
+		remainingParams := strings.TrimSpace(afterQuery[closeQuoteIndex+2:])
+		if len(remainingParams) > 0 {
+			if err := v.validateCommandParts(remainingParams); err != nil {
+				return err
+			}
+		}
+	} else {
+		return &ValidationError{Message: "Error: KQL query must be properly quoted"}
+	}
+
+	return nil
+}
+
+// validateCommandParts validates command parts that should not contain dangerous patterns
+func (v *Validator) validateCommandParts(commandPart string) error {
+	dangerousPatterns := []string{
+		";",  // Command separator
+		"|",  // Pipe (not allowed outside KQL)
+		"&",  // Background execution or AND operator
+		"`",  // Command substitution (backticks)
+		"&&", // AND operator
+		"||", // OR operator
+		">>", // Append redirection
+		">",  // Output redirection
+		"$(", // Command substitution
+		"${", // Variable substitution that could be misused
+		"\n", // Newlines
+		"\r", // Carriage returns
+	}
+
+	for _, pattern := range dangerousPatterns {
+		if strings.Contains(commandPart, pattern) {
+			return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
+		}
+	}
+
+	// Special handling for input redirection - allow "<<" but block single "<"
+	if strings.Contains(commandPart, "<") {
+		for i := 0; i < len(commandPart); i++ {
+			if commandPart[i] == '<' {
+				if i+1 >= len(commandPart) || commandPart[i+1] != '<' {
+					return &ValidationError{Message: "Error: Command contains potentially dangerous characters or patterns"}
+				}
+				i++ // Skip the next '<'
+			}
+		}
+	}
+
+	return nil
+}

@@ -98,3 +98,58 @@ func RegisterResourceHealthTool() mcp.Tool {
 		),
 	)
 }
+
+// RegisterControlPlaneDiagnosticSettingsTool registers the diagnostic settings checker tool
+func RegisterControlPlaneDiagnosticSettingsTool() mcp.Tool {
+	return mcp.NewTool("aks_control_plane_diagnostic_settings",
+		mcp.WithDescription("Check if AKS cluster has diagnostic settings configured and identify the Log Analytics workspace"),
+		mcp.WithString("subscription_id",
+			mcp.Required(),
+			mcp.Description("Azure subscription ID"),
+		),
+		mcp.WithString("resource_group",
+			mcp.Required(),
+			mcp.Description("Resource group name containing the AKS cluster"),
+		),
+		mcp.WithString("cluster_name",
+			mcp.Required(),
+			mcp.Description("AKS cluster name"),
+		),
+	)
+}
+
+// RegisterControlPlaneLogsTool registers the logs querying tool
+func RegisterControlPlaneLogsTool() mcp.Tool {
+	return mcp.NewTool("aks_control_plane_logs",
+		mcp.WithDescription("Query AKS control plane logs with safety constraints and time range validation"),
+		mcp.WithString("subscription_id",
+			mcp.Required(),
+			mcp.Description("Azure subscription ID"),
+		),
+		mcp.WithString("resource_group",
+			mcp.Required(),
+			mcp.Description("Resource group name containing the AKS cluster"),
+		),
+		mcp.WithString("cluster_name",
+			mcp.Required(),
+			mcp.Description("AKS cluster name"),
+		),
+		mcp.WithString("log_category",
+			mcp.Required(),
+			mcp.Description("Control plane log category (kube-apiserver, kube-audit, kube-audit-admin, kube-controller-manager, kube-scheduler, cluster-autoscaler, cloud-controller-manager, guard, csi-azuredisk-controller, csi-azurefile-controller, csi-snapshot-controller, fleet-member-agent, fleet-member-net-controller-manager, fleet-mcs-controller-manager)"),
+		),
+		mcp.WithString("start_time",
+			mcp.Required(),
+			mcp.Description("Start time in ISO 8601 format (max 7 days ago, e.g., '2025-07-14T00:00:00Z')"),
+		),
+		mcp.WithString("end_time",
+			mcp.Description("End time in ISO 8601 format (defaults to now, max 24 hours from start_time)"),
+		),
+		mcp.WithString("max_records",
+			mcp.Description("Maximum number of log records to return (default: 100, max: 1000)"),
+		),
+		mcp.WithString("log_level",
+			mcp.Description("Filter by log level (error, warning, info) - optional"),
+		),
+	)
+}

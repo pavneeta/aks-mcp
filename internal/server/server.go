@@ -58,6 +58,9 @@ func (s *Service) Initialize() error {
 	// Register Azure Advisor tools
 	s.registerAdvisorTools()
 
+	// Register AKS Control Plane tools
+	s.registerControlPlaneTools()
+
 	return nil
 }
 
@@ -165,6 +168,21 @@ func (s *Service) registerAzCommands() {
 		// Fleet commands are handled by the generic az fleet tool registered above
 		// No additional registration needed for admin access
 	}
+}
+
+// registerControlPlaneTools registers all AKS control plane log-related tools
+func (s *Service) registerControlPlaneTools() {
+	log.Println("Registering AKS Control Plane tools...")
+
+	// Register diagnostic settings tool
+	log.Println("Registering control plane tool: aks_control_plane_diagnostic_settings")
+	diagnosticTool := monitor.RegisterControlPlaneDiagnosticSettingsTool()
+	s.mcpServer.AddTool(diagnosticTool, tools.CreateResourceHandler(monitor.GetControlPlaneDiagnosticSettingsHandler(s.cfg), s.cfg))
+
+	// Register logs querying tool
+	log.Println("Registering control plane tool: aks_control_plane_logs")
+	logsTool := monitor.RegisterControlPlaneLogsTool()
+	s.mcpServer.AddTool(logsTool, tools.CreateResourceHandler(monitor.GetControlPlaneLogsHandler(s.cfg), s.cfg))
 }
 
 func (s *Service) registerAzureResourceTools() {
