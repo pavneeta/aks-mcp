@@ -57,20 +57,6 @@ func GetReadOnlyMonitorCommands() []MonitorCommand {
 			ArgsExample: "--resource /subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.ContainerService/managedClusters/{clusterName}",
 			Category:    "metrics",
 		},
-		// Diagnostic settings commands
-		{
-			Name:        "az monitor diagnostic-settings list",
-			Description: "List diagnostic settings for a resource",
-			ArgsExample: "--resource /subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.ContainerService/managedClusters/{clusterName}",
-			Category:    "diagnostic-settings",
-		},
-		// Log query commands
-		{
-			Name:        "az logs query",
-			Description: "Query logs from Log Analytics workspace",
-			ArgsExample: "--workspace {workspace-id} --analytics-query \"AzureDiagnostics | where Category == 'kube-apiserver' | limit 100\" --start-time 2025-07-14T00:00:00Z",
-			Category:    "logs",
-		},
 	}
 }
 
