@@ -233,7 +233,7 @@ func TestValidateTimeRange(t *testing.T) {
 				"end_time": "2025-07-16T11:00:00Z", // More than 24 hours
 			},
 			wantError: true,
-			errorMsg:  "time range cannot exceed 24 hours",
+			errorMsg:  "time range cannot exceed 24h0m0s",
 		},
 		{
 			name:      "end time in future",
@@ -933,7 +933,7 @@ func TestValidateTimeRange_EdgeCases(t *testing.T) {
 			startTime:   now.Add(-24*time.Hour - time.Minute).Format(time.RFC3339),
 			params:      map[string]interface{}{"end_time": now.Format(time.RFC3339)},
 			expectError: true,
-			errorMsg:    "cannot exceed 24 hours",
+			errorMsg:    "cannot exceed 24h0m0s",
 		},
 		{
 			name:        "invalid end time format",

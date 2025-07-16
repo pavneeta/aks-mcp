@@ -14,6 +14,29 @@ import (
 	"github.com/Azure/aks-mcp/internal/tools"
 )
 
+// Constants for diagnostics configuration
+const (
+	MaxLogRetentionDays      = 7
+	MaxQueryRangeDuration    = 24 * time.Hour
+	DefaultMaxRecords        = 100
+	MaxAllowedRecords        = 1000
+)
+
+// Log level prefixes used in Kubernetes logs
+var logLevelPrefixes = map[string]string{
+	"info":    "I",
+	"warning": "W", 
+	"error":   "E",
+}
+
+// Utility functions
+
+// buildClusterResourceID constructs the Azure resource ID for an AKS cluster
+func buildClusterResourceID(subscriptionID, resourceGroup, clusterName string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ContainerService/managedClusters/%s",
+		subscriptionID, resourceGroup, clusterName)
+}
+
 // Control Plane Diagnostics Handler Functions
 
 // HandleControlPlaneDiagnosticSettings checks diagnostic settings for AKS cluster
@@ -24,9 +47,8 @@ func HandleControlPlaneDiagnosticSettings(params map[string]interface{}, cfg *co
 		return "", err
 	}
 
-	// Build cluster resource ID
-	clusterResourceID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ContainerService/managedClusters/%s",
-		subscriptionID, resourceGroup, clusterName)
+	// Build cluster resource ID using utility function
+	clusterResourceID := buildClusterResourceID(subscriptionID, resourceGroup, clusterName)
 
 	// Execute Azure CLI command to get diagnostic settings
 	executor := azcli.NewExecutor()
@@ -42,7 +64,7 @@ func HandleControlPlaneDiagnosticSettings(params map[string]interface{}, cfg *co
 
 	result, err := executor.Execute(cmdParams, cfg)
 	if err != nil {
-		return "", fmt.Errorf("failed to get diagnostic settings: %w", err)
+		return "", fmt.Errorf("failed to get diagnostic settings for cluster %s in resource group %s: %w", clusterName, resourceGroup, err)
 	}
 
 	// Return raw JSON result from Azure CLI
@@ -72,12 +94,11 @@ func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigDat
 	// Get workspace GUID from diagnostic settings
 	workspaceGUID, err := extractWorkspaceGUIDFromDiagnosticSettings(subscriptionID, resourceGroup, clusterName, cfg)
 	if err != nil {
-		return "", fmt.Errorf("failed to get workspace GUID: %w", err)
+		return "", fmt.Errorf("failed to get workspace GUID for cluster %s: %w", clusterName, err)
 	}
 
-	// Build cluster resource ID for scoping
-	clusterResourceID := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.ContainerService/managedClusters/%s",
-		subscriptionID, resourceGroup, clusterName)
+	// Build cluster resource ID for scoping using utility function
+	clusterResourceID := buildClusterResourceID(subscriptionID, resourceGroup, clusterName)
 
 	// Build safe KQL query scoped to this specific AKS cluster
 	kqlQuery := buildSafeKQLQuery(logCategory, logLevel, maxRecords, clusterResourceID)
@@ -104,7 +125,7 @@ func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigDat
 
 	result, err := executor.Execute(cmdParams, cfg)
 	if err != nil {
-		return "", fmt.Errorf("failed to query control plane logs: %w", err)
+		return "", fmt.Errorf("failed to query control plane logs for category %s in cluster %s: %w", logCategory, clusterName, err)
 	}
 
 	// Return raw JSON result from Azure CLI
@@ -188,10 +209,10 @@ func validateTimeRange(startTime string, params map[string]interface{}) error {
 		return fmt.Errorf("invalid start_time format, expected RFC3339 (ISO 8601): %w", err)
 	}
 
-	// Check if start time is not more than 7 days ago
-	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
-	if start.Before(sevenDaysAgo) {
-		return fmt.Errorf("start_time cannot be more than 7 days ago")
+	// Check if start time is not more than the maximum retention period
+	maxRetentionAgo := time.Now().AddDate(0, 0, -MaxLogRetentionDays)
+	if start.Before(maxRetentionAgo) {
+		return fmt.Errorf("start_time cannot be more than %d days ago", MaxLogRetentionDays)
 	}
 
 	// Check if start time is in the future
@@ -206,9 +227,9 @@ func validateTimeRange(startTime string, params map[string]interface{}) error {
 			return fmt.Errorf("invalid end_time format, expected RFC3339 (ISO 8601): %w", err)
 		}
 
-		// Check if time range is not more than 24 hours
-		if end.Sub(start) > 24*time.Hour {
-			return fmt.Errorf("time range cannot exceed 24 hours")
+		// Check if time range exceeds maximum query duration
+		if end.Sub(start) > MaxQueryRangeDuration {
+			return fmt.Errorf("time range cannot exceed %v", MaxQueryRangeDuration)
 		}
 
 		if end.Before(start) {
@@ -275,19 +296,10 @@ func buildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourc
 	baseQuery := fmt.Sprintf("AzureDiagnostics | where Category == '%s' and ResourceId == '%s'", category, upperResourceID)
 
 	if logLevel != "" {
-		// Filter by log level embedded in the log message itself
+		// Filter by log level using the predefined mapping
 		// Kubernetes logs use format like "I0715" (Info), "W0715" (Warning), "E0715" (Error)
-		var levelPrefix string
-		switch strings.ToLower(logLevel) {
-		case "info":
-			levelPrefix = "I"
-		case "warning":
-			levelPrefix = "W"
-		case "error":
-			levelPrefix = "E"
-		}
-		if levelPrefix != "" {
-			baseQuery += fmt.Sprintf(" | where log_s startswith '%s'", levelPrefix)
+		if prefix, exists := logLevelPrefixes[strings.ToLower(logLevel)]; exists {
+			baseQuery += fmt.Sprintf(" | where log_s startswith '%s'", prefix)
 		}
 	}
 
@@ -303,16 +315,16 @@ func buildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourc
 func getMaxRecords(params map[string]interface{}) int {
 	if val, ok := params["max_records"].(string); ok && val != "" {
 		if recordsInt, err := strconv.Atoi(val); err == nil {
-			if recordsInt > 1000 {
-				return 1000
+			if recordsInt > MaxAllowedRecords {
+				return MaxAllowedRecords
 			}
 			if recordsInt < 1 {
-				return 100
+				return DefaultMaxRecords
 			}
 			return recordsInt
 		}
 	}
-	return 100
+	return DefaultMaxRecords
 }
 
 // calculateTimespan converts start/end times to Azure CLI timespan format
