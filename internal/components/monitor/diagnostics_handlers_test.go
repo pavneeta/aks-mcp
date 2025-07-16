@@ -333,12 +333,12 @@ func TestGetMaxRecords(t *testing.T) {
 
 func TestBuildSafeKQLQuery(t *testing.T) {
 	tests := []struct {
-		name              string
-		category          string
-		logLevel          string
-		maxRecords        int
-		clusterResourceID string
-		expectedContains  []string
+		name                string
+		category            string
+		logLevel            string
+		maxRecords          int
+		clusterResourceID   string
+		expectedContains    []string
 		expectedNotContains []string
 	}{
 		{
@@ -421,13 +421,13 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			query := buildSafeKQLQuery(tt.category, tt.logLevel, tt.maxRecords, tt.clusterResourceID)
-			
+
 			for _, expected := range tt.expectedContains {
 				if !strings.Contains(query, expected) {
 					t.Errorf("Expected query to contain '%s', but it didn't. Query: %s", expected, query)
 				}
 			}
-			
+
 			for _, notExpected := range tt.expectedNotContains {
 				if strings.Contains(query, notExpected) {
 					t.Errorf("Expected query NOT to contain '%s', but it did. Query: %s", notExpected, query)
@@ -476,7 +476,7 @@ func TestCalculateTimespan(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			timespan, err := calculateTimespan(tt.startTime, tt.endTime)
-			
+
 			if tt.wantError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
@@ -490,17 +490,17 @@ func TestCalculateTimespan(t *testing.T) {
 					t.Errorf("Expected no error but got: %v", err)
 					return
 				}
-				
+
 				// Verify timespan format
 				if !strings.Contains(timespan, "/") {
 					t.Errorf("Expected timespan to contain '/', got: %s", timespan)
 				}
-				
+
 				parts := strings.Split(timespan, "/")
 				if len(parts) != 2 {
 					t.Errorf("Expected timespan to have 2 parts separated by '/', got: %s", timespan)
 				}
-				
+
 				// Verify start time is correctly formatted
 				if parts[0] != tt.startTime {
 					t.Errorf("Expected start time to be '%s', got '%s'", tt.startTime, parts[0])
@@ -539,15 +539,15 @@ func TestGetWorkspaceGUID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &config.ConfigData{
-				Timeout:        30,
-				AccessLevel:    "readonly",
+				Timeout:     30,
+				AccessLevel: "readonly",
 				SecurityConfig: &security.SecurityConfig{
 					AccessLevel: "readonly",
 				},
 			}
-			
+
 			_, err := getWorkspaceGUID(tt.workspaceResourceID, cfg)
-			
+
 			if tt.wantError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
@@ -644,8 +644,8 @@ func TestHandleControlPlaneDiagnosticSettings_ParameterValidation(t *testing.T) 
 	}
 
 	cfg := &config.ConfigData{
-		Timeout:        30,
-		AccessLevel:    "readonly",
+		Timeout:     30,
+		AccessLevel: "readonly",
 		SecurityConfig: &security.SecurityConfig{
 			AccessLevel: "readonly",
 		},
@@ -654,7 +654,7 @@ func TestHandleControlPlaneDiagnosticSettings_ParameterValidation(t *testing.T) 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := HandleControlPlaneDiagnosticSettings(tt.params, cfg)
-			
+
 			if tt.wantError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
@@ -740,18 +740,18 @@ func TestGetControlPlaneDiagnosticSettingsHandler(t *testing.T) {
 		},
 	}
 	handler := GetControlPlaneDiagnosticSettingsHandler(cfg)
-	
+
 	if handler == nil {
 		t.Error("Expected handler to be created, got nil")
 	}
-	
+
 	// Test handler with invalid params to ensure it calls the underlying function
 	params := map[string]interface{}{}
 	_, err := handler.Handle(params, cfg)
 	if err == nil {
 		t.Error("Expected error for missing parameters, got nil")
 	}
-	
+
 	if !strings.Contains(err.Error(), "missing or invalid subscription_id parameter") {
 		t.Errorf("Expected specific error message, got: %v", err)
 	}
@@ -764,18 +764,18 @@ func TestGetControlPlaneLogsHandler(t *testing.T) {
 		},
 	}
 	handler := GetControlPlaneLogsHandler(cfg)
-	
+
 	if handler == nil {
 		t.Error("Expected handler to be created, got nil")
 	}
-	
+
 	// Test handler with invalid params to ensure it calls the underlying function
 	params := map[string]interface{}{}
 	_, err := handler.Handle(params, cfg)
 	if err == nil {
 		t.Error("Expected error for missing parameters, got nil")
 	}
-	
+
 	if !strings.Contains(err.Error(), "missing or invalid") {
 		t.Errorf("Expected validation error, got: %v", err)
 	}
@@ -787,13 +787,13 @@ func TestExtractWorkspaceGUIDFromDiagnosticSettings_InvalidResourceID(t *testing
 			AccessLevel: "readwrite", // Changed to readwrite since diagnostic settings is not readonly
 		},
 	}
-	
+
 	// This will fail at the diagnostic settings call, but we can test the error handling
 	_, err := extractWorkspaceGUIDFromDiagnosticSettings("invalid-sub", "invalid-rg", "invalid-cluster", cfg)
 	if err == nil {
 		t.Error("Expected error for invalid parameters, got nil")
 	}
-	
+
 	// Should fail at the Azure CLI execution level (could be timeout, permission, or other execution error)
 	if !strings.Contains(err.Error(), "failed to get") && !strings.Contains(err.Error(), "context deadline exceeded") && !strings.Contains(err.Error(), "workspace GUID") {
 		t.Errorf("Expected Azure CLI execution error, got: %v", err)
@@ -802,9 +802,9 @@ func TestExtractWorkspaceGUIDFromDiagnosticSettings_InvalidResourceID(t *testing
 
 func TestBuildSafeKQLQuery_UppercaseResourceID(t *testing.T) {
 	clusterResourceID := "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster"
-	
+
 	query := buildSafeKQLQuery("kube-apiserver", "", 100, clusterResourceID)
-	
+
 	// Verify the resource ID is converted to uppercase
 	expectedUpperResourceID := "/SUBSCRIPTIONS/TEST-SUB/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.CONTAINERSERVICE/MANAGEDCLUSTERS/TEST-CLUSTER"
 	if !strings.Contains(query, expectedUpperResourceID) {
@@ -814,7 +814,7 @@ func TestBuildSafeKQLQuery_UppercaseResourceID(t *testing.T) {
 
 func TestBuildSafeKQLQuery_LogLevelFiltering(t *testing.T) {
 	clusterResourceID := "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster"
-	
+
 	testCases := []struct {
 		name       string
 		logLevel   string
@@ -825,11 +825,11 @@ func TestBuildSafeKQLQuery_LogLevelFiltering(t *testing.T) {
 		{"error level", "error", "log_s startswith 'E'"},
 		{"empty level", "", ""}, // Should not have any log level filter
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			query := buildSafeKQLQuery("kube-apiserver", tc.logLevel, 100, clusterResourceID)
-			
+
 			if tc.shouldFind != "" {
 				if !strings.Contains(query, tc.shouldFind) {
 					t.Errorf("Expected query to contain '%s', got: %s", tc.shouldFind, query)
@@ -846,9 +846,9 @@ func TestBuildSafeKQLQuery_LogLevelFiltering(t *testing.T) {
 
 func TestBuildSafeKQLQuery_QueryStructure(t *testing.T) {
 	clusterResourceID := "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster"
-	
+
 	query := buildSafeKQLQuery("kube-apiserver", "info", 50, clusterResourceID)
-	
+
 	// Verify all required components are present in the correct order
 	requiredComponents := []string{
 		"AzureDiagnostics",
@@ -859,7 +859,7 @@ func TestBuildSafeKQLQuery_QueryStructure(t *testing.T) {
 		"limit 50",
 		"project TimeGenerated, Level, log_s",
 	}
-	
+
 	lastIndex := -1
 	for _, component := range requiredComponents {
 		index := strings.Index(query, component)
@@ -890,14 +890,14 @@ func TestGetMaxRecords_EdgeCases(t *testing.T) {
 		{"non-numeric string", "abc", 100},
 		{"float string", "50.5", 100},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			params := map[string]interface{}{}
 			if tc.input != nil {
 				params["max_records"] = tc.input
 			}
-			
+
 			result := getMaxRecords(params)
 			if result != tc.expected {
 				t.Errorf("Expected %d for input %v, got %d", tc.expected, tc.input, result)
@@ -908,7 +908,7 @@ func TestGetMaxRecords_EdgeCases(t *testing.T) {
 
 func TestValidateTimeRange_EdgeCases(t *testing.T) {
 	now := time.Now()
-	
+
 	testCases := []struct {
 		name        string
 		startTime   string
@@ -950,11 +950,11 @@ func TestValidateTimeRange_EdgeCases(t *testing.T) {
 			errorMsg:    "cannot be in the future",
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateTimeRange(tc.startTime, tc.params)
-			
+
 			if tc.expectError {
 				if err == nil {
 					t.Errorf("Expected error for %s, got nil", tc.name)

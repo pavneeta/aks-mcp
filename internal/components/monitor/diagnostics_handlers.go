@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Azure/aks-mcp/internal/azcli"
+	"github.com/Azure/aks-mcp/internal/components/common"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
 )
@@ -17,20 +18,10 @@ import (
 
 // HandleControlPlaneDiagnosticSettings checks diagnostic settings for AKS cluster
 func HandleControlPlaneDiagnosticSettings(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
-	// Extract and validate parameters
-	subscriptionID, ok := params["subscription_id"].(string)
-	if !ok || subscriptionID == "" {
-		return "", fmt.Errorf("missing or invalid subscription_id parameter")
-	}
-
-	resourceGroup, ok := params["resource_group"].(string)
-	if !ok || resourceGroup == "" {
-		return "", fmt.Errorf("missing or invalid resource_group parameter")
-	}
-
-	clusterName, ok := params["cluster_name"].(string)
-	if !ok || clusterName == "" {
-		return "", fmt.Errorf("missing or invalid cluster_name parameter")
+	// Extract and validate parameters using common helper
+	subscriptionID, resourceGroup, clusterName, err := common.ExtractAKSParameters(params)
+	if err != nil {
+		return "", err
 	}
 
 	// Build cluster resource ID
@@ -60,10 +51,13 @@ func HandleControlPlaneDiagnosticSettings(params map[string]interface{}, cfg *co
 
 // HandleControlPlaneLogs queries specific control plane logs
 func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
-	// Extract and validate all parameters
-	subscriptionID, _ := params["subscription_id"].(string)
-	resourceGroup, _ := params["resource_group"].(string)
-	clusterName, _ := params["cluster_name"].(string)
+	// Extract and validate AKS parameters using common helper
+	subscriptionID, resourceGroup, clusterName, err := common.ExtractAKSParameters(params)
+	if err != nil {
+		return "", err
+	}
+
+	// Extract remaining parameters
 	logCategory, _ := params["log_category"].(string)
 	startTime, _ := params["start_time"].(string)
 	endTime, _ := params["end_time"].(string)
@@ -96,7 +90,7 @@ func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigDat
 
 	// Execute log query with properly quoted KQL
 	executor := azcli.NewExecutor()
-	
+
 	// Build command string with proper quoting for the KQL query
 	cmd := fmt.Sprintf("az monitor log-analytics query --workspace %s --analytics-query \"%s\" --timespan %s --output json",
 		workspaceGUID, kqlQuery, timespan)
@@ -120,8 +114,14 @@ func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigDat
 // Helper functions for control plane diagnostics
 
 func validateControlPlaneLogsParams(params map[string]interface{}) error {
-	// Validate required parameters
-	required := []string{"subscription_id", "resource_group", "cluster_name", "log_category", "start_time"}
+	// Validate AKS parameters using common helper
+	_, _, _, err := common.ExtractAKSParameters(params)
+	if err != nil {
+		return err
+	}
+
+	// Validate remaining required parameters
+	required := []string{"log_category", "start_time"}
 	for _, param := range required {
 		if value, ok := params[param].(string); !ok || value == "" {
 			return fmt.Errorf("missing or invalid %s parameter", param)
@@ -224,7 +224,7 @@ func validateTimeRange(startTime string, params map[string]interface{}) error {
 }
 
 func extractWorkspaceGUIDFromDiagnosticSettings(subscriptionID, resourceGroup, clusterName string, cfg *config.ConfigData) (string, error) {
-	// Get diagnostic settings
+	// Get diagnostic settings using common parameter structure
 	params := map[string]interface{}{
 		"subscription_id": subscriptionID,
 		"resource_group":  resourceGroup,
@@ -244,7 +244,7 @@ func extractWorkspaceGUIDFromDiagnosticSettings(subscriptionID, resourceGroup, c
 
 	// Handle both array and object formats
 	var settings []interface{}
-	
+
 	// Check if it's an array (direct diagnostic settings response)
 	if settingsArray, ok := parsed.([]interface{}); ok {
 		settings = settingsArray
@@ -282,7 +282,7 @@ func buildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourc
 		case "info":
 			levelPrefix = "I"
 		case "warning":
-			levelPrefix = "W"  
+			levelPrefix = "W"
 		case "error":
 			levelPrefix = "E"
 		}
@@ -293,7 +293,7 @@ func buildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourc
 
 	baseQuery += " | order by TimeGenerated desc"
 	baseQuery += fmt.Sprintf(" | limit %d", maxRecords)
-	
+
 	// Project only essential fields: log content, timestamp, and level
 	baseQuery += " | project TimeGenerated, Level, log_s"
 
@@ -321,7 +321,7 @@ func calculateTimespan(startTime, endTime string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("invalid start time format: %w", err)
 	}
-	
+
 	var end time.Time
 	if endTime != "" {
 		end, err = time.Parse(time.RFC3339, endTime)
@@ -332,7 +332,7 @@ func calculateTimespan(startTime, endTime string) (string, error) {
 		// Default to current time if no end time specified
 		end = time.Now()
 	}
-	
+
 	// Azure CLI timespan format: start_time/end_time in ISO8601
 	timespan := fmt.Sprintf("%s/%s", start.Format(time.RFC3339), end.Format(time.RFC3339))
 	return timespan, nil
@@ -346,7 +346,7 @@ func getWorkspaceGUID(workspaceResourceID string, cfg *config.ConfigData) (strin
 	if len(parts) < 8 {
 		return "", fmt.Errorf("invalid workspace resource ID format: %s", workspaceResourceID)
 	}
-	
+
 	var resourceGroup, workspaceName string
 	for i, part := range parts {
 		if strings.ToLower(part) == "resourcegroups" && i+1 < len(parts) {
@@ -356,30 +356,30 @@ func getWorkspaceGUID(workspaceResourceID string, cfg *config.ConfigData) (strin
 			workspaceName = parts[i+1]
 		}
 	}
-	
+
 	if resourceGroup == "" || workspaceName == "" {
 		return "", fmt.Errorf("could not extract resource group and workspace name from: %s", workspaceResourceID)
 	}
-	
+
 	// Query the workspace to get its GUID (customerId)
 	executor := azcli.NewExecutor()
 	cmd := fmt.Sprintf("az monitor log-analytics workspace show --resource-group %s --workspace-name %s --query customerId --output tsv", resourceGroup, workspaceName)
-	
+
 	cmdParams := map[string]interface{}{
 		"command": cmd,
 	}
-	
+
 	result, err := executor.Execute(cmdParams, cfg)
 	if err != nil {
 		return "", fmt.Errorf("failed to get workspace GUID: %w", err)
 	}
-	
+
 	// The result should be the workspace GUID, trim any whitespace
 	workspaceGUID := strings.TrimSpace(result)
 	if workspaceGUID == "" {
 		return "", fmt.Errorf("empty workspace GUID returned for workspace: %s", workspaceName)
 	}
-	
+
 	return workspaceGUID, nil
 }
 

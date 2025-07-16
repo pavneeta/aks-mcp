@@ -57,7 +57,7 @@ func (s *Service) Initialize() error {
 
 	// Register Azure Advisor tools
 	s.registerAdvisorTools()
-	
+
 	// Register AKS Control Plane tools
 	s.registerControlPlaneTools()
 
