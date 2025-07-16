@@ -16,16 +16,16 @@ import (
 
 // Constants for diagnostics configuration
 const (
-	MaxLogRetentionDays      = 7
-	MaxQueryRangeDuration    = 24 * time.Hour
-	DefaultMaxRecords        = 100
-	MaxAllowedRecords        = 1000
+	MaxLogRetentionDays   = 7
+	MaxQueryRangeDuration = 24 * time.Hour
+	DefaultMaxRecords     = 100
+	MaxAllowedRecords     = 1000
 )
 
 // Log level prefixes used in Kubernetes logs
 var logLevelPrefixes = map[string]string{
 	"info":    "I",
-	"warning": "W", 
+	"warning": "W",
 	"error":   "E",
 }
 
