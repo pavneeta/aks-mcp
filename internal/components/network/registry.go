@@ -105,3 +105,23 @@ func RegisterLoadBalancersInfoTool() mcp.Tool {
 		),
 	)
 }
+
+// RegisterPrivateEndpointInfoTool registers the get_private_endpoint_info tool
+func RegisterPrivateEndpointInfoTool() mcp.Tool {
+	return mcp.NewTool(
+		"get_private_endpoint_info",
+		mcp.WithDescription("Get information about the private endpoint used by the AKS cluster (only available for private clusters)"),
+		mcp.WithString("subscription_id",
+			mcp.Description("Azure Subscription ID"),
+			mcp.Required(),
+		),
+		mcp.WithString("resource_group",
+			mcp.Description("Azure Resource Group containing the AKS cluster"),
+			mcp.Required(),
+		),
+		mcp.WithString("cluster_name",
+			mcp.Description("Name of the AKS cluster"),
+			mcp.Required(),
+		),
+	)
+}

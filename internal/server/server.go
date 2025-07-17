@@ -233,6 +233,11 @@ func (s *Service) registerNetworkTools(azClient *azureclient.AzureClient) {
 	log.Println("Registering network tool: get_load_balancers_info")
 	lbTool := network.RegisterLoadBalancersInfoTool()
 	s.mcpServer.AddTool(lbTool, tools.CreateResourceHandler(network.GetLoadBalancersInfoHandler(azClient, s.cfg), s.cfg))
+
+	// Register Private Endpoint info tool
+	log.Println("Registering network tool: get_private_endpoint_info")
+	privateEndpointTool := network.RegisterPrivateEndpointInfoTool()
+	s.mcpServer.AddTool(privateEndpointTool, tools.CreateResourceHandler(network.GetPrivateEndpointInfoHandler(azClient, s.cfg), s.cfg))
 }
 
 // registerDetectorTools registers all detector-related Azure resource tools

@@ -23,6 +23,7 @@ type SubscriptionClients struct {
 	RouteTableClient       *armnetwork.RouteTablesClient
 	NSGClient              *armnetwork.SecurityGroupsClient
 	LoadBalancerClient     *armnetwork.LoadBalancersClient
+	PrivateEndpointsClient *armnetwork.PrivateEndpointsClient
 	VMSSClient             *armcompute.VirtualMachineScaleSetsClient
 	VMSSVMsClient          *armcompute.VirtualMachineScaleSetVMsClient
 }
@@ -105,6 +106,11 @@ func (c *AzureClient) GetOrCreateClientsForSubscription(subscriptionID string) (
 		return nil, fmt.Errorf("failed to create load balancer client for subscription %s: %v", subscriptionID, err)
 	}
 
+	privateEndpointsClient, err := armnetwork.NewPrivateEndpointsClient(subscriptionID, c.credential, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create private endpoints client for subscription %s: %v", subscriptionID, err)
+	}
+
 	vmssClient, err := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, c.credential, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create VMSS client for subscription %s: %v", subscriptionID, err)
@@ -124,6 +130,7 @@ func (c *AzureClient) GetOrCreateClientsForSubscription(subscriptionID string) (
 		RouteTableClient:       routeTableClient,
 		NSGClient:              nsgClient,
 		LoadBalancerClient:     loadBalancerClient,
+		PrivateEndpointsClient: privateEndpointsClient,
 		VMSSClient:             vmssClient,
 		VMSSVMsClient:          vmssVMsClient,
 	}
@@ -304,6 +311,45 @@ func (c *AzureClient) GetLoadBalancer(ctx context.Context, subscriptionID, resou
 	c.cache.Set(cacheKey, lb)
 
 	return lb, nil
+}
+
+// GetPrivateEndpoint retrieves information about the specified private endpoint.
+func (c *AzureClient) GetPrivateEndpoint(ctx context.Context, subscriptionID, resourceGroup, peName string) (*armnetwork.PrivateEndpoint, error) {
+	// Create cache key
+	cacheKey := fmt.Sprintf("resource:privateendpoint:%s:%s:%s", subscriptionID, resourceGroup, peName)
+
+	// Check cache first
+	if cached, found := c.cache.Get(cacheKey); found {
+		if pe, ok := cached.(*armnetwork.PrivateEndpoint); ok {
+			return pe, nil
+		}
+	}
+
+	clients, err := c.GetOrCreateClientsForSubscription(subscriptionID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := clients.PrivateEndpointsClient.Get(ctx, resourceGroup, peName, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get private endpoint: %v", err)
+	}
+
+	pe := &resp.PrivateEndpoint
+	// Store in cache
+	c.cache.Set(cacheKey, pe)
+
+	return pe, nil
+}
+
+// GetPrivateEndpointByID retrieves information about the specified private endpoint using its resource ID.
+func (c *AzureClient) GetPrivateEndpointByID(ctx context.Context, privateEndpointID string) (*armnetwork.PrivateEndpoint, error) {
+	parsedID, err := arm.ParseResourceID(privateEndpointID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private endpoint ID: %v", err)
+	}
+
+	return c.GetPrivateEndpoint(ctx, parsedID.SubscriptionID, parsedID.ResourceGroupName, parsedID.Name)
 }
 
 // GetVMSS retrieves information about the specified VMSS.
