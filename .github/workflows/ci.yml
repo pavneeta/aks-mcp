@@ -82,13 +82,13 @@ jobs:
       
       - name: Run tests with coverage
         run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
-        continue-on-error: true
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           file: ./coverage.txt
           fail_ci_if_error: false
+        continue-on-error: true
           
       - name: Archive code coverage results
         uses: actions/upload-artifact@v4
