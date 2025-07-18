@@ -279,3 +279,53 @@ func GetLoadBalancersInfoHandler(client *azureclient.AzureClient, cfg *config.Co
 		return string(resultJSON), nil
 	})
 }
+
+// GetPrivateEndpointInfoHandler returns a handler for the get_private_endpoint_info command
+func GetPrivateEndpointInfoHandler(client *azureclient.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
+	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
+		// Extract parameters using common helper
+		subID, rg, clusterName, err := common.ExtractAKSParameters(params)
+		if err != nil {
+			return "", err
+		}
+
+		// Get the cluster details to verify it exists and get node resource group
+		cluster, err := client.GetAKSCluster(context.Background(), subID, rg, clusterName)
+		if err != nil {
+			return "", fmt.Errorf("failed to get AKS cluster: %v", err)
+		}
+
+		// Check if cluster is private and get private endpoint info
+		privateEndpointID, err := resourcehelpers.GetPrivateEndpointIDFromAKS(context.Background(), cluster, client)
+		if err != nil {
+			return "", fmt.Errorf("failed to get private endpoint info: %v", err)
+		}
+
+		// If no private endpoint found, return appropriate message
+		if privateEndpointID == "" {
+			result := map[string]interface{}{
+				"message":         "No private endpoint found. This AKS cluster is not configured as a private cluster.",
+				"private_cluster": false,
+			}
+			jsonData, err := json.Marshal(result)
+			if err != nil {
+				return "", fmt.Errorf("failed to marshal response: %v", err)
+			}
+			return string(jsonData), nil
+		}
+
+		// Get the private endpoint details using the resource ID
+		privateEndpoint, err := client.GetPrivateEndpointByID(context.Background(), privateEndpointID)
+		if err != nil {
+			return "", fmt.Errorf("failed to get private endpoint details: %v", err)
+		}
+
+		// Return the private endpoint details directly as JSON
+		jsonData, err := json.Marshal(privateEndpoint)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal private endpoint details: %v", err)
+		}
+
+		return string(jsonData), nil
+	})
+}

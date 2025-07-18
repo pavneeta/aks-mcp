@@ -98,3 +98,26 @@ func TestGetSubnetInfoHandler(t *testing.T) {
 		t.Error("Expected handler to be non-nil")
 	}
 }
+
+func TestRegisterPrivateEndpointInfoTool(t *testing.T) {
+	tool := RegisterPrivateEndpointInfoTool()
+
+	if tool.Name != "get_private_endpoint_info" {
+		t.Errorf("Expected tool name 'get_private_endpoint_info', got %s", tool.Name)
+	}
+
+	if tool.Description == "" {
+		t.Error("Expected tool description to be set")
+	}
+}
+
+func TestGetPrivateEndpointInfoHandler(t *testing.T) {
+	mockClient := &azureclient.AzureClient{}
+	cfg := &config.ConfigData{}
+
+	handler := GetPrivateEndpointInfoHandler(mockClient, cfg)
+
+	if handler == nil {
+		t.Error("Expected handler to be non-nil")
+	}
+}
