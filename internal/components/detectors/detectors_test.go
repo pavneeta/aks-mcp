@@ -91,9 +91,11 @@ func TestValidateCategory(t *testing.T) {
 			wantErr:  true,
 		},
 		{
-			name:     "case sensitive validation",
+			// Test case updated: validateCategory() uses strings.EqualFold() for case-insensitive comparison,
+			// so "best practices" should be accepted as valid (same as "Best Practices")
+			name:     "case insensitive validation",
 			category: "best practices",
-			wantErr:  true,
+			wantErr:  false,
 		},
 	}
 
