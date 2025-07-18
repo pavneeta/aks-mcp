@@ -349,6 +349,11 @@ func (c *AzureClient) GetPrivateEndpointByID(ctx context.Context, privateEndpoin
 		return nil, fmt.Errorf("failed to parse private endpoint ID: %v", err)
 	}
 
+	// Validate that the resource type is actually a private endpoint
+	if parsedID.ResourceType.String() != "Microsoft.Network/privateEndpoints" {
+		return nil, fmt.Errorf("invalid resource type: expected Microsoft.Network/privateEndpoints, got %s", parsedID.ResourceType.String())
+	}
+
 	return c.GetPrivateEndpoint(ctx, parsedID.SubscriptionID, parsedID.ResourceGroupName, parsedID.Name)
 }
 
