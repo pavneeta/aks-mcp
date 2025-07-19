@@ -206,12 +206,6 @@ func validateAppInsightsParams(params map[string]interface{}) error {
 		}
 	}
 
-	// Validate KQL query safety
-	query := params["query"].(string)
-	if err := validateKQLQuery(query); err != nil {
-		return fmt.Errorf("invalid KQL query: %w", err)
-	}
-
 	// Validate time format for start_time if provided
 	if startTime, ok := params["start_time"].(string); ok && startTime != "" {
 		if _, err := time.Parse(time.RFC3339, startTime); err != nil {
@@ -231,52 +225,6 @@ func validateAppInsightsParams(params map[string]interface{}) error {
 		if !strings.HasPrefix(timespan, "P") && !strings.HasPrefix(timespan, "PT") {
 			return fmt.Errorf("invalid timespan format, expected ISO 8601 duration (e.g., PT1H, P1D)")
 		}
-	}
-
-	return nil
-}
-
-// validateKQLQuery validates KQL queries for safety
-func validateKQLQuery(query string) error {
-	// Convert to lowercase for case-insensitive checking
-	queryLower := strings.ToLower(strings.TrimSpace(query))
-
-	// Block dangerous keywords
-	dangerousKeywords := []string{
-		"delete", "drop", "create", "alter", "insert", "update",
-		"truncate", "merge", "exec", "execute", "sp_",
-	}
-
-	for _, keyword := range dangerousKeywords {
-		if strings.Contains(queryLower, keyword) {
-			return fmt.Errorf("dangerous keyword '%s' not allowed in KQL queries", keyword)
-		}
-	}
-
-	// Ensure query starts with valid Application Insights table names
-	validTables := []string{
-		"requests", "dependencies", "exceptions", "traces", "customevents",
-		"pageviews", "custommetrics", "performancecounters", "availabilityresults",
-		"browserTimings", "union", "let", "with", "print",
-	}
-
-	// Split query into words and check first word
-	words := strings.Fields(queryLower)
-	if len(words) == 0 {
-		return fmt.Errorf("empty query not allowed")
-	}
-
-	firstWord := words[0]
-	valid := false
-	for _, table := range validTables {
-		if firstWord == table {
-			valid = true
-			break
-		}
-	}
-
-	if !valid {
-		return fmt.Errorf("query must start with a valid Application Insights table name or KQL operator")
 	}
 
 	return nil

@@ -69,66 +69,6 @@ func TestHandleAppInsightsQuery_MissingParameters(t *testing.T) {
 	}
 }
 
-func TestValidateKQLQuery_DangerousKeywords(t *testing.T) {
-	dangerousQueries := []string{
-		"DELETE FROM requests",
-		"DROP TABLE requests",
-		"CREATE TABLE test",
-		"ALTER TABLE requests",
-		"INSERT INTO requests",
-		"UPDATE requests SET duration = 0",
-		"TRUNCATE TABLE requests",
-	}
-
-	for _, query := range dangerousQueries {
-		t.Run(query, func(t *testing.T) {
-			err := validateKQLQuery(query)
-			if err == nil {
-				t.Errorf("Expected error for dangerous query '%s', got nil", query)
-			}
-		})
-	}
-}
-
-func TestValidateKQLQuery_ValidQueries(t *testing.T) {
-	validQueries := []string{
-		"requests | where timestamp > ago(1h) | limit 10",
-		"dependencies | summarize count() by type",
-		"exceptions | where timestamp > ago(1d)",
-		"traces | project timestamp, message",
-		"customevents | limit 100",
-		"pageviews | where timestamp > ago(1h)",
-		"union requests, dependencies",
-		"let timeRange = ago(1h); requests | where timestamp > timeRange",
-	}
-
-	for _, query := range validQueries {
-		t.Run(query, func(t *testing.T) {
-			err := validateKQLQuery(query)
-			if err != nil {
-				t.Errorf("Expected no error for valid query '%s', got: %v", query, err)
-			}
-		})
-	}
-}
-
-func TestValidateKQLQuery_InvalidTableNames(t *testing.T) {
-	invalidQueries := []string{
-		"invalid_table | limit 10",
-		"some_random_table | where timestamp > ago(1h)",
-		"fake_data | project *",
-	}
-
-	for _, query := range invalidQueries {
-		t.Run(query, func(t *testing.T) {
-			err := validateKQLQuery(query)
-			if err == nil {
-				t.Errorf("Expected error for invalid table query '%s', got nil", query)
-			}
-		})
-	}
-}
-
 func TestRegisterAppInsightsQueryTool(t *testing.T) {
 	tool := RegisterAppInsightsQueryTool()
 
