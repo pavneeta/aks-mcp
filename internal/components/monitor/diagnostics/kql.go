@@ -6,114 +6,193 @@ import (
 	"time"
 )
 
-// Log level prefixes used in Kubernetes logs
-var logLevelPrefixes = map[string]string{
-	"info":    "I",
-	"warning": "W",
-	"error":   "E",
+// LogLevelMapping defines the mapping between log levels and their representations
+type LogLevelMapping struct {
+	AzureDiagnosticsPrefix string // Prefix used in Azure Diagnostics log_s field
+	ResourceSpecificLevel  string // Level value used in resource-specific tables
 }
 
-// Audit log categories that use different log level format
+// logLevelMappings contains the mapping for each log level
+var logLevelMappings = map[string]LogLevelMapping{
+	"info":    {AzureDiagnosticsPrefix: "I", ResourceSpecificLevel: "INFO"},
+	"warning": {AzureDiagnosticsPrefix: "W", ResourceSpecificLevel: "WARNING"},
+	"error":   {AzureDiagnosticsPrefix: "E", ResourceSpecificLevel: "ERROR"},
+}
+
+// AuditCategories defines which log categories are audit logs (different handling)
 var auditCategories = map[string]bool{
 	"kube-audit":       true,
 	"kube-audit-admin": true,
 }
 
-// Resource-specific table mappings for AKS log categories
-var resourceSpecificTables = map[string]string{
-	"kube-audit":                        "AKSAudit",
-	"kube-audit-admin":                  "AKSAuditAdmin", 
-	"kube-apiserver":                    "AKSControlPlane",
-	"kube-controller-manager":           "AKSControlPlane",
-	"kube-scheduler":                    "AKSControlPlane",
-	"cluster-autoscaler":                "AKSControlPlane",
-	"cloud-controller-manager":          "AKSControlPlane",
-	"guard":                             "AKSControlPlane",
-	"csi-azuredisk-controller":          "AKSControlPlane",
-	"csi-azurefile-controller":          "AKSControlPlane",
-	"csi-snapshot-controller":           "AKSControlPlane",
+// ResourceSpecificTableMapping defines the mapping from log categories to resource-specific table names
+var resourceSpecificTableMapping = map[string]string{
+	"kube-audit":               "AKSAudit",
+	"kube-audit-admin":         "AKSAuditAdmin",
+	"kube-apiserver":           "AKSControlPlane",
+	"kube-controller-manager":  "AKSControlPlane",
+	"kube-scheduler":           "AKSControlPlane",
+	"cluster-autoscaler":       "AKSControlPlane",
+	"cloud-controller-manager": "AKSControlPlane",
+	"guard":                    "AKSControlPlane",
+	"csi-azuredisk-controller": "AKSControlPlane",
+	"csi-azurefile-controller": "AKSControlPlane",
+	"csi-snapshot-controller":  "AKSControlPlane",
 }
 
-// isAuditCategory checks if the given category is an audit log category
-func isAuditCategory(category string) bool {
-	return auditCategories[category]
+// KQLQueryBuilder builds KQL queries for AKS control plane logs
+type KQLQueryBuilder struct {
+	category            string
+	logLevel            string
+	maxRecords          int
+	clusterResourceID   string
+	isResourceSpecific  bool
+	actualTableMode     TableMode
+	selectedTable       string
+	processedResourceID string
+}
+
+// TableMode represents the type of table being used
+type TableMode int
+
+const (
+	AzureDiagnosticsMode TableMode = iota
+	ResourceSpecificMode
+)
+
+// NewKQLQueryBuilder creates a new KQL query builder instance
+func NewKQLQueryBuilder(category, logLevel string, maxRecords int, clusterResourceID string, isResourceSpecific bool) *KQLQueryBuilder {
+	return &KQLQueryBuilder{
+		category:           category,
+		logLevel:           logLevel,
+		maxRecords:         maxRecords,
+		clusterResourceID:  clusterResourceID,
+		isResourceSpecific: isResourceSpecific,
+	}
+}
+
+// determineTableStrategy decides which table to use and processes the resource ID accordingly
+func (q *KQLQueryBuilder) determineTableStrategy() {
+	if q.isResourceSpecific {
+		if tableName, exists := resourceSpecificTableMapping[q.category]; exists {
+			q.actualTableMode = ResourceSpecificMode
+			q.selectedTable = tableName
+			// Resource-specific tables store _ResourceId in lowercase
+			q.processedResourceID = strings.ToLower(q.clusterResourceID)
+		} else {
+			// Fallback to Azure Diagnostics for unmapped categories
+			q.actualTableMode = AzureDiagnosticsMode
+			q.selectedTable = "AzureDiagnostics"
+			// Azure Diagnostics stores ResourceId in uppercase
+			q.processedResourceID = strings.ToUpper(q.clusterResourceID)
+		}
+	} else {
+		q.actualTableMode = AzureDiagnosticsMode
+		q.selectedTable = "AzureDiagnostics"
+		q.processedResourceID = strings.ToUpper(q.clusterResourceID)
+	}
+}
+
+// buildBaseQuery creates the initial table selection and filtering clause
+func (q *KQLQueryBuilder) buildBaseQuery() string {
+	switch q.actualTableMode {
+	case ResourceSpecificMode:
+		return fmt.Sprintf("%s | where _ResourceId == '%s'", q.selectedTable, q.processedResourceID)
+	case AzureDiagnosticsMode:
+		return fmt.Sprintf("%s | where Category == '%s' and ResourceId == '%s'", q.selectedTable, q.category, q.processedResourceID)
+	default:
+		// Fallback to Azure Diagnostics
+		return fmt.Sprintf("AzureDiagnostics | where Category == '%s' and ResourceId == '%s'", q.category, q.processedResourceID)
+	}
+}
+
+// isAuditCategory checks if the current category is an audit log category
+func (q *KQLQueryBuilder) isAuditCategory() bool {
+	return auditCategories[q.category]
+}
+
+// addLogLevelFilter adds log level filtering if applicable
+func (q *KQLQueryBuilder) addLogLevelFilter(baseQuery string) string {
+	// Skip log level filtering for audit categories or empty log level
+	if q.logLevel == "" || q.isAuditCategory() {
+		return baseQuery
+	}
+
+	mapping, exists := logLevelMappings[strings.ToLower(q.logLevel)]
+	if !exists {
+		return baseQuery // Unknown log level, skip filtering
+	}
+
+	switch q.actualTableMode {
+	case ResourceSpecificMode:
+		return baseQuery + fmt.Sprintf(" | where Level == '%s'", mapping.ResourceSpecificLevel)
+	case AzureDiagnosticsMode:
+		return baseQuery + fmt.Sprintf(" | where log_s startswith '%s'", mapping.AzureDiagnosticsPrefix)
+	default:
+		return baseQuery
+	}
+}
+
+// addOrderingAndLimit adds the ordering and limit clauses
+func (q *KQLQueryBuilder) addOrderingAndLimit(query string) string {
+	query += " | order by TimeGenerated desc"
+	query += fmt.Sprintf(" | limit %d", q.maxRecords)
+	return query
+}
+
+// addProjection adds the appropriate field projection based on table type
+func (q *KQLQueryBuilder) addProjection(query string) string {
+	switch q.actualTableMode {
+	case ResourceSpecificMode:
+		return q.addResourceSpecificProjection(query)
+	case AzureDiagnosticsMode:
+		return query + " | project TimeGenerated, Level, log_s"
+	default:
+		return query + " | project TimeGenerated, Level, log_s"
+	}
+}
+
+// addResourceSpecificProjection adds projection for resource-specific tables
+func (q *KQLQueryBuilder) addResourceSpecificProjection(query string) string {
+	switch q.selectedTable {
+	case "AKSAudit", "AKSAuditAdmin":
+		// Audit tables have structured fields
+		return query + " | project TimeGenerated, Level, AuditId, Stage, RequestUri, Verb, User"
+	case "AKSControlPlane":
+		// Control plane table has message field
+		return query + " | project TimeGenerated, Category, Level, Message, PodName"
+	default:
+		// Fallback projection for unknown resource-specific tables
+		return query + " | project TimeGenerated, Level, Message"
+	}
+}
+
+// Build constructs the complete KQL query
+func (q *KQLQueryBuilder) Build() string {
+	// Step 1: Determine table strategy
+	q.determineTableStrategy()
+
+	// Step 2: Build base query with table and resource filtering
+	query := q.buildBaseQuery()
+
+	// Step 3: Add log level filtering
+	query = q.addLogLevelFilter(query)
+
+	// Step 4: Add ordering and limit
+	query = q.addOrderingAndLimit(query)
+
+	// Step 5: Add field projection
+	query = q.addProjection(query)
+
+	return query
 }
 
 // BuildSafeKQLQuery builds pre-validated KQL queries to prevent injection, scoped to specific AKS cluster
 // Supports both Azure Diagnostics and Resource-specific destination tables
+// This function maintains backward compatibility with the existing API
 func BuildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourceID string, isResourceSpecific bool) string {
-	var baseQuery string
-	var actuallyUsingResourceSpecific bool
-	
-	if isResourceSpecific {
-		// Use resource-specific table
-		if tableName, exists := resourceSpecificTables[category]; exists {
-			// For resource-specific tables, _ResourceId is stored in lowercase
-			// Convert the resource ID to lowercase to match Azure's storage format
-			lowerResourceID := strings.ToLower(clusterResourceID)
-			baseQuery = fmt.Sprintf("%s | where _ResourceId == '%s'", tableName, lowerResourceID)
-			actuallyUsingResourceSpecific = true
-		} else {
-			// Fallback to Azure Diagnostics table if no resource-specific mapping found
-			// Azure Diagnostics uses uppercase ResourceId
-			upperResourceID := strings.ToUpper(clusterResourceID)
-			baseQuery = fmt.Sprintf("AzureDiagnostics | where Category == '%s' and ResourceId == '%s'", category, upperResourceID)
-			actuallyUsingResourceSpecific = false
-		}
-	} else {
-		// Use Azure Diagnostics table (legacy mode)
-		// Azure Diagnostics ResourceId field is stored in uppercase
-		upperResourceID := strings.ToUpper(clusterResourceID)
-		baseQuery = fmt.Sprintf("AzureDiagnostics | where Category == '%s' and ResourceId == '%s'", category, upperResourceID)
-		actuallyUsingResourceSpecific = false
-	}
-
-	// Add log level filtering for non-audit logs
-	if logLevel != "" && !isAuditCategory(category) {
-		if actuallyUsingResourceSpecific {
-			// In resource-specific tables, log level is stored in the Level field as "INFO", "WARNING", "ERROR"
-			// Convert the requested log level to the format used in resource-specific tables
-			switch strings.ToLower(logLevel) {
-			case "info":
-				baseQuery += " | where Level == 'INFO'"
-			case "warning":
-				baseQuery += " | where Level == 'WARNING'"
-			case "error":
-				baseQuery += " | where Level == 'ERROR'"
-			}
-		} else {
-			// For Azure Diagnostics, use the log_s prefix pattern
-			// Kubernetes logs use format like "I0715" (Info), "W0715" (Warning), "E0715" (Error)
-			if prefix, exists := logLevelPrefixes[strings.ToLower(logLevel)]; exists {
-				baseQuery += fmt.Sprintf(" | where log_s startswith '%s'", prefix)
-			}
-		}
-	}
-
-	baseQuery += " | order by TimeGenerated desc"
-	baseQuery += fmt.Sprintf(" | limit %d", maxRecords)
-
-	// Project essential fields - adjust based on table type
-	if actuallyUsingResourceSpecific {
-		// Resource-specific tables have different field names based on the table type
-		if tableName, exists := resourceSpecificTables[category]; exists {
-			if tableName == "AKSAudit" || tableName == "AKSAuditAdmin" {
-				// Audit tables have structured fields, no single message field
-				baseQuery += " | project TimeGenerated, Level, AuditId, Stage, RequestUri, Verb, User"
-			} else {
-				// AKSControlPlane table has Message field
-				baseQuery += " | project TimeGenerated, Category, Level, Message, PodName"
-			}
-		} else {
-			// Fallback projection for unknown resource-specific tables
-			baseQuery += " | project TimeGenerated, Level, Message"
-		}
-	} else {
-		// Azure Diagnostics table fields
-		baseQuery += " | project TimeGenerated, Level, log_s"
-	}
-
-	return baseQuery
+	builder := NewKQLQueryBuilder(category, logLevel, maxRecords, clusterResourceID, isResourceSpecific)
+	return builder.Build()
 }
 
 // CalculateTimespan converts start/end times to Azure CLI timespan format

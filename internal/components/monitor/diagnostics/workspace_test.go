@@ -210,11 +210,11 @@ func TestFindDiagnosticSettingForCategory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, err := FindDiagnosticSettingForCategory("test-sub", "test-rg", "test-cluster", tt.logCategory, cfg)
-			
+
 			if tt.expectError && err == nil {
 				t.Errorf("Expected error for category %s, got nil", tt.logCategory)
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("Unexpected error for category %s: %v", tt.logCategory, err)
 			}

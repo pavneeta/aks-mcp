@@ -205,7 +205,7 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 		// New comprehensive test cases for resource-specific table mode with correct log level handling
 		{
 			name:               "resource-specific query with warning log level for control plane",
-			category:           "kube-controller-manager", 
+			category:           "kube-controller-manager",
 			logLevel:           "warning",
 			maxRecords:         75,
 			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/cluster",
@@ -225,7 +225,7 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 		{
 			name:               "resource-specific query with error log level for control plane",
 			category:           "cloud-controller-manager",
-			logLevel:           "error", 
+			logLevel:           "error",
 			maxRecords:         25,
 			clusterResourceID:  "/subscriptions/TEST/resourcegroups/RG/providers/Microsoft.ContainerService/managedClusters/cluster",
 			isResourceSpecific: true,
@@ -251,7 +251,7 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			expectedContains: []string{
 				"AKSAudit",
 				"where _ResourceId ==",
-				"limit 100", 
+				"limit 100",
 				"project TimeGenerated, Level, AuditId, Stage, RequestUri, Verb, User",
 			},
 			notExpected: []string{
@@ -287,7 +287,7 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			clusterResourceID:  "/SUBSCRIPTIONS/TEST/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.CONTAINERSERVICE/MANAGEDCLUSTERS/CLUSTER",
 			isResourceSpecific: true,
 			expectedContains: []string{
-				"AKSControlPlane", 
+				"AKSControlPlane",
 				"where _ResourceId == '/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster'", // all lowercase
 				"limit 50",
 			},
@@ -346,7 +346,7 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 
 			// Verify query structure
 			if tt.isResourceSpecific {
-				if tableName, exists := resourceSpecificTables[tt.category]; exists {
+				if tableName, exists := resourceSpecificTableMapping[tt.category]; exists {
 					if !strings.HasPrefix(query, tableName) {
 						t.Errorf("Resource-specific query should start with %s, got: %s", tableName, query)
 					}
@@ -620,9 +620,9 @@ func TestBuildSafeKQLQuerySanitization(t *testing.T) {
 
 func TestBuildSafeKQLQueryResourceSpecificMode(t *testing.T) {
 	tests := []struct {
-		name              string
-		category          string
-		expectedTable     string
+		name               string
+		category           string
+		expectedTable      string
 		isResourceSpecific bool
 	}{
 		{
@@ -675,99 +675,99 @@ func TestBuildSafeKQLQueryResourceSpecificMode(t *testing.T) {
 
 func TestResourceSpecificLogLevelFiltering(t *testing.T) {
 	testResourceID := "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster"
-	
+
 	tests := []struct {
-		name              string
-		category          string
-		logLevel          string
+		name               string
+		category           string
+		logLevel           string
 		isResourceSpecific bool
-		expectedFilter    string
-		notExpected       string
+		expectedFilter     string
+		notExpected        string
 	}{
 		{
-			name:              "resource-specific info level filtering",
-			category:          "kube-apiserver",
-			logLevel:          "info",
+			name:               "resource-specific info level filtering",
+			category:           "kube-apiserver",
+			logLevel:           "info",
 			isResourceSpecific: true,
-			expectedFilter:    "where Level == 'INFO'",
-			notExpected:       "where Message startswith",
+			expectedFilter:     "where Level == 'INFO'",
+			notExpected:        "where Message startswith",
 		},
 		{
-			name:              "resource-specific warning level filtering",
-			category:          "kube-controller-manager",
-			logLevel:          "warning",
+			name:               "resource-specific warning level filtering",
+			category:           "kube-controller-manager",
+			logLevel:           "warning",
 			isResourceSpecific: true,
-			expectedFilter:    "where Level == 'WARNING'",
-			notExpected:       "where log_s startswith",
+			expectedFilter:     "where Level == 'WARNING'",
+			notExpected:        "where log_s startswith",
 		},
 		{
-			name:              "resource-specific error level filtering",
-			category:          "cloud-controller-manager",
-			logLevel:          "error",
+			name:               "resource-specific error level filtering",
+			category:           "cloud-controller-manager",
+			logLevel:           "error",
 			isResourceSpecific: true,
-			expectedFilter:    "where Level == 'ERROR'",
-			notExpected:       "where Message startswith 'E'",
+			expectedFilter:     "where Level == 'ERROR'",
+			notExpected:        "where Message startswith 'E'",
 		},
 		{
-			name:              "azure diagnostics info level filtering",
-			category:          "kube-apiserver",
-			logLevel:          "info",
+			name:               "azure diagnostics info level filtering",
+			category:           "kube-apiserver",
+			logLevel:           "info",
 			isResourceSpecific: false,
-			expectedFilter:    "where log_s startswith 'I'",
-			notExpected:       "where Level == 'INFO'",
+			expectedFilter:     "where log_s startswith 'I'",
+			notExpected:        "where Level == 'INFO'",
 		},
 		{
-			name:              "azure diagnostics warning level filtering",
-			category:          "kube-scheduler",
-			logLevel:          "warning",
+			name:               "azure diagnostics warning level filtering",
+			category:           "kube-scheduler",
+			logLevel:           "warning",
 			isResourceSpecific: false,
-			expectedFilter:    "where log_s startswith 'W'",
-			notExpected:       "where Level == 'WARNING'",
+			expectedFilter:     "where log_s startswith 'W'",
+			notExpected:        "where Level == 'WARNING'",
 		},
 		{
-			name:              "azure diagnostics error level filtering",
-			category:          "cluster-autoscaler",
-			logLevel:          "error",
+			name:               "azure diagnostics error level filtering",
+			category:           "cluster-autoscaler",
+			logLevel:           "error",
 			isResourceSpecific: false,
-			expectedFilter:    "where log_s startswith 'E'",
-			notExpected:       "where Level == 'ERROR'",
+			expectedFilter:     "where log_s startswith 'E'",
+			notExpected:        "where Level == 'ERROR'",
 		},
 		{
-			name:              "resource-specific audit should skip log level filtering",
-			category:          "kube-audit",
-			logLevel:          "info",
+			name:               "resource-specific audit should skip log level filtering",
+			category:           "kube-audit",
+			logLevel:           "info",
 			isResourceSpecific: true,
-			expectedFilter:    "", // no filtering expected
-			notExpected:       "where Level == 'INFO'",
+			expectedFilter:     "", // no filtering expected
+			notExpected:        "where Level == 'INFO'",
 		},
 		{
-			name:              "resource-specific audit-admin should skip log level filtering",
-			category:          "kube-audit-admin",
-			logLevel:          "error",
+			name:               "resource-specific audit-admin should skip log level filtering",
+			category:           "kube-audit-admin",
+			logLevel:           "error",
 			isResourceSpecific: true,
-			expectedFilter:    "", // no filtering expected
-			notExpected:       "where Level == 'ERROR'",
+			expectedFilter:     "", // no filtering expected
+			notExpected:        "where Level == 'ERROR'",
 		},
 		{
-			name:              "azure diagnostics audit should skip log level filtering",
-			category:          "kube-audit",
-			logLevel:          "warning",
+			name:               "azure diagnostics audit should skip log level filtering",
+			category:           "kube-audit",
+			logLevel:           "warning",
 			isResourceSpecific: false,
-			expectedFilter:    "", // no filtering expected
-			notExpected:       "where log_s startswith 'W'",
+			expectedFilter:     "", // no filtering expected
+			notExpected:        "where log_s startswith 'W'",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			query := BuildSafeKQLQuery(tt.category, tt.logLevel, 100, testResourceID, tt.isResourceSpecific)
-			
+
 			if tt.expectedFilter != "" {
 				if !strings.Contains(query, tt.expectedFilter) {
 					t.Errorf("Expected query to contain '%s', but it didn't. Query: %s", tt.expectedFilter, query)
 				}
 			}
-			
+
 			if tt.notExpected != "" {
 				if strings.Contains(query, tt.notExpected) {
 					t.Errorf("Expected query NOT to contain '%s', but it did. Query: %s", tt.notExpected, query)
@@ -811,11 +811,11 @@ func TestResourceIdCaseSensitivity(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			query := BuildSafeKQLQuery("kube-apiserver", "", 100, tc.inputResourceID, tc.isResourceSpecific)
-			
+
 			if !strings.Contains(query, tc.expectedInQuery) {
 				t.Errorf("Expected query to contain resource ID '%s', but it didn't. Query: %s", tc.expectedInQuery, query)
 			}
-			
+
 			// Make sure it doesn't contain the original case
 			if tc.inputResourceID != tc.expectedInQuery && strings.Contains(query, tc.inputResourceID) {
 				t.Errorf("Query should not contain original resource ID case '%s'. Query: %s", tc.inputResourceID, query)

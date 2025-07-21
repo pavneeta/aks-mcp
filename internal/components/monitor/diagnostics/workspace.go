@@ -219,8 +219,8 @@ func FindDiagnosticSettingForCategory(subscriptionID, resourceGroup, clusterName
 								}
 
 								// Debug log which setting and workspace is being used
-								log.Printf("Using diagnostic setting '%s' for log category '%s' in cluster '%s': workspaceId=%s, destinationType=%s, isResourceSpecific=%t", 
-									settingName, logCategory, clusterName, workspaceResourceID, 
+								log.Printf("Using diagnostic setting '%s' for log category '%s' in cluster '%s': workspaceId=%s, destinationType=%s, isResourceSpecific=%t",
+									settingName, logCategory, clusterName, workspaceResourceID,
 									setting["logAnalyticsDestinationType"], isResourceSpecific)
 
 								return workspaceResourceID, isResourceSpecific, nil
