@@ -9,20 +9,22 @@ import (
 
 func TestBuildSafeKQLQuery(t *testing.T) {
 	tests := []struct {
-		name              string
-		category          string
-		logLevel          string
-		maxRecords        int
-		clusterResourceID string
-		expectedContains  []string
-		notExpected       []string
+		name               string
+		category           string
+		logLevel           string
+		maxRecords         int
+		clusterResourceID  string
+		isResourceSpecific bool
+		expectedContains   []string
+		notExpected        []string
 	}{
 		{
-			name:              "basic query without log level",
-			category:          "kube-apiserver",
-			logLevel:          "",
-			maxRecords:        100,
-			clusterResourceID: "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			name:               "azure diagnostics query without log level",
+			category:           "kube-apiserver",
+			logLevel:           "",
+			maxRecords:         100,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: false,
 			expectedContains: []string{
 				"AzureDiagnostics",
 				"where Category == 'kube-apiserver'",
@@ -35,11 +37,49 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			},
 		},
 		{
-			name:              "query with info log level",
-			category:          "kube-apiserver",
-			logLevel:          "info",
-			maxRecords:        50,
-			clusterResourceID: "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			name:               "resource-specific query for kube-apiserver",
+			category:           "kube-apiserver",
+			logLevel:           "",
+			maxRecords:         100,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: true,
+			expectedContains: []string{
+				"AKSControlPlane",
+				"where _ResourceId ==",
+				"limit 100",
+				"project TimeGenerated, Category, Level, Message, PodName",
+				"order by TimeGenerated desc",
+			},
+			notExpected: []string{
+				"AzureDiagnostics",
+				"where Category ==",
+			},
+		},
+		{
+			name:               "resource-specific query for audit logs",
+			category:           "kube-audit",
+			logLevel:           "",
+			maxRecords:         100,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: true,
+			expectedContains: []string{
+				"AKSAudit",
+				"where _ResourceId ==",
+				"limit 100",
+				"project TimeGenerated, Level, AuditId, Stage, RequestUri, Verb, User",
+			},
+			notExpected: []string{
+				"AzureDiagnostics",
+				"where Category ==",
+			},
+		},
+		{
+			name:               "azure diagnostics query with info log level",
+			category:           "kube-apiserver",
+			logLevel:           "info",
+			maxRecords:         50,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: false,
 			expectedContains: []string{
 				"AzureDiagnostics",
 				"where Category == 'kube-apiserver'",
@@ -49,11 +89,26 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			},
 		},
 		{
-			name:              "query with error log level",
-			category:          "kube-controller-manager",
-			logLevel:          "error",
-			maxRecords:        200,
-			clusterResourceID: "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			name:               "resource-specific query with info log level",
+			category:           "kube-apiserver",
+			logLevel:           "info",
+			maxRecords:         50,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: true,
+			expectedContains: []string{
+				"AKSControlPlane",
+				"where _ResourceId ==",
+				"where Message startswith 'I'",
+				"limit 50",
+			},
+		},
+		{
+			name:               "azure diagnostics query with error log level",
+			category:           "kube-controller-manager",
+			logLevel:           "error",
+			maxRecords:         200,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: false,
 			expectedContains: []string{
 				"where Category == 'kube-controller-manager'",
 				"where log_s startswith 'E'",
@@ -61,11 +116,12 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			},
 		},
 		{
-			name:              "query with warning log level",
-			category:          "kube-scheduler",
-			logLevel:          "warning",
-			maxRecords:        300,
-			clusterResourceID: "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			name:               "azure diagnostics query with warning log level",
+			category:           "kube-scheduler",
+			logLevel:           "warning",
+			maxRecords:         300,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: false,
 			expectedContains: []string{
 				"where Category == 'kube-scheduler'",
 				"where log_s startswith 'W'",
@@ -73,22 +129,24 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			},
 		},
 		{
-			name:              "query with audit category",
-			category:          "kube-audit",
-			logLevel:          "",
-			maxRecords:        1000,
-			clusterResourceID: "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			name:               "azure diagnostics query with audit category",
+			category:           "kube-audit",
+			logLevel:           "",
+			maxRecords:         1000,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: false,
 			expectedContains: []string{
 				"where Category == 'kube-audit'",
 				"limit 1000",
 			},
 		},
 		{
-			name:              "query with audit category and log level - should skip log level filtering",
-			category:          "kube-audit",
-			logLevel:          "info",
-			maxRecords:        500,
-			clusterResourceID: "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			name:               "azure diagnostics query with audit category and log level - should skip log level filtering",
+			category:           "kube-audit",
+			logLevel:           "info",
+			maxRecords:         500,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: false,
 			expectedContains: []string{
 				"where Category == 'kube-audit'",
 				"limit 500",
@@ -99,11 +157,12 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			},
 		},
 		{
-			name:              "query with audit-admin category and log level - should skip log level filtering",
-			category:          "kube-audit-admin",
-			logLevel:          "error",
-			maxRecords:        200,
-			clusterResourceID: "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			name:               "azure diagnostics query with audit-admin category and log level - should skip log level filtering",
+			category:           "kube-audit-admin",
+			logLevel:           "error",
+			maxRecords:         200,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: false,
 			expectedContains: []string{
 				"where Category == 'kube-audit-admin'",
 				"limit 200",
@@ -114,22 +173,40 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			},
 		},
 		{
-			name:              "query with cloud controller manager",
-			category:          "cloud-controller-manager",
-			logLevel:          "info",
-			maxRecords:        150,
-			clusterResourceID: "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			name:               "azure diagnostics query with cloud controller manager",
+			category:           "cloud-controller-manager",
+			logLevel:           "info",
+			maxRecords:         150,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: false,
 			expectedContains: []string{
 				"where Category == 'cloud-controller-manager'",
 				"where log_s startswith 'I'",
 				"limit 150",
 			},
 		},
+		{
+			name:               "fallback to azure diagnostics for unmapped category in resource-specific mode",
+			category:           "unknown-category",
+			logLevel:           "",
+			maxRecords:         100,
+			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
+			isResourceSpecific: true,
+			expectedContains: []string{
+				"AzureDiagnostics",
+				"where Category == 'unknown-category'",
+				"limit 100",
+			},
+			notExpected: []string{
+				"AKSControlPlane",
+				"where _ResourceId ==",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery(tt.category, tt.logLevel, tt.maxRecords, tt.clusterResourceID)
+			query := BuildSafeKQLQuery(tt.category, tt.logLevel, tt.maxRecords, tt.clusterResourceID, tt.isResourceSpecific)
 
 			// Check that expected strings are present
 			for _, expected := range tt.expectedContains {
@@ -146,8 +223,21 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 			}
 
 			// Verify query structure
-			if !strings.HasPrefix(query, "AzureDiagnostics") {
-				t.Errorf("Query should start with AzureDiagnostics, got: %s", query)
+			if tt.isResourceSpecific {
+				if tableName, exists := resourceSpecificTables[tt.category]; exists {
+					if !strings.HasPrefix(query, tableName) {
+						t.Errorf("Resource-specific query should start with %s, got: %s", tableName, query)
+					}
+				} else {
+					// Fallback to AzureDiagnostics
+					if !strings.HasPrefix(query, "AzureDiagnostics") {
+						t.Errorf("Fallback query should start with AzureDiagnostics, got: %s", query)
+					}
+				}
+			} else {
+				if !strings.HasPrefix(query, "AzureDiagnostics") {
+					t.Errorf("Azure Diagnostics query should start with AzureDiagnostics, got: %s", query)
+				}
 			}
 
 			if !strings.Contains(query, "order by TimeGenerated desc") {
@@ -304,7 +394,7 @@ func TestBuildSafeKQLQueryLogLevelMapping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery("kube-apiserver", tt.logLevel, 100, "/test/resource")
+			query := BuildSafeKQLQuery("kube-apiserver", tt.logLevel, 100, "/test/resource", false)
 
 			if tt.expectedPrefix == "" {
 				// Should not contain any log level filtering
@@ -321,7 +411,7 @@ func TestBuildSafeKQLQueryLogLevelMapping(t *testing.T) {
 }
 
 func TestBuildSafeKQLQueryStructure(t *testing.T) {
-	query := BuildSafeKQLQuery("kube-apiserver", "info", 100, "/test/resource")
+	query := BuildSafeKQLQuery("kube-apiserver", "info", 100, "/test/resource", false)
 
 	// The query should be a single line with pipe separators
 	if strings.Contains(query, "\n") {
@@ -390,7 +480,7 @@ func TestBuildSafeKQLQuerySanitization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery(tt.category, "", 100, tt.clusterResourceID)
+			query := BuildSafeKQLQuery(tt.category, "", 100, tt.clusterResourceID, false)
 
 			// Basic validation that query was generated
 			if query == "" {
@@ -401,6 +491,61 @@ func TestBuildSafeKQLQuerySanitization(t *testing.T) {
 			expectedCategoryClause := fmt.Sprintf("where Category == '%s'", tt.category)
 			if !strings.Contains(query, expectedCategoryClause) {
 				t.Errorf("Expected query to contain properly quoted category clause '%s', got: %s", expectedCategoryClause, query)
+			}
+		})
+	}
+}
+
+func TestBuildSafeKQLQueryResourceSpecificMode(t *testing.T) {
+	tests := []struct {
+		name              string
+		category          string
+		expectedTable     string
+		isResourceSpecific bool
+	}{
+		{
+			name:               "kube-audit maps to AKSAudit table",
+			category:           "kube-audit",
+			expectedTable:      "AKSAudit",
+			isResourceSpecific: true,
+		},
+		{
+			name:               "kube-audit-admin maps to AKSAuditAdmin table",
+			category:           "kube-audit-admin",
+			expectedTable:      "AKSAuditAdmin",
+			isResourceSpecific: true,
+		},
+		{
+			name:               "kube-apiserver maps to AKSControlPlane table",
+			category:           "kube-apiserver",
+			expectedTable:      "AKSControlPlane",
+			isResourceSpecific: true,
+		},
+		{
+			name:               "unknown category falls back to AzureDiagnostics",
+			category:           "unknown-category",
+			expectedTable:      "AzureDiagnostics",
+			isResourceSpecific: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query := BuildSafeKQLQuery(tt.category, "", 100, "/test/resource", tt.isResourceSpecific)
+
+			if !strings.Contains(query, tt.expectedTable) {
+				t.Errorf("Expected query to contain table '%s', but it didn't. Query: %s", tt.expectedTable, query)
+			}
+
+			if tt.isResourceSpecific && tt.expectedTable != "AzureDiagnostics" {
+				// Should use _ResourceId instead of ResourceId
+				if !strings.Contains(query, "_ResourceId ==") {
+					t.Errorf("Expected resource-specific query to use '_ResourceId ==', but it didn't. Query: %s", query)
+				}
+				// Should NOT contain Category filter
+				if strings.Contains(query, "where Category ==") {
+					t.Errorf("Expected resource-specific query NOT to contain 'where Category ==', but it did. Query: %s", query)
+				}
 			}
 		})
 	}
