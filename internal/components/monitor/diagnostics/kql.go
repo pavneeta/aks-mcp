@@ -43,6 +43,7 @@ func isAuditCategory(category string) bool {
 // Supports both Azure Diagnostics and Resource-specific destination tables
 func BuildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourceID string, isResourceSpecific bool) string {
 	var baseQuery string
+	var actuallyUsingResourceSpecific bool
 	
 	if isResourceSpecific {
 		// Use resource-specific table
@@ -51,22 +52,25 @@ func BuildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourc
 			// Convert the resource ID to lowercase to match Azure's storage format
 			lowerResourceID := strings.ToLower(clusterResourceID)
 			baseQuery = fmt.Sprintf("%s | where _ResourceId == '%s'", tableName, lowerResourceID)
+			actuallyUsingResourceSpecific = true
 		} else {
 			// Fallback to Azure Diagnostics table if no resource-specific mapping found
 			// Azure Diagnostics uses uppercase ResourceId
 			upperResourceID := strings.ToUpper(clusterResourceID)
 			baseQuery = fmt.Sprintf("AzureDiagnostics | where Category == '%s' and ResourceId == '%s'", category, upperResourceID)
+			actuallyUsingResourceSpecific = false
 		}
 	} else {
 		// Use Azure Diagnostics table (legacy mode)
 		// Azure Diagnostics ResourceId field is stored in uppercase
 		upperResourceID := strings.ToUpper(clusterResourceID)
 		baseQuery = fmt.Sprintf("AzureDiagnostics | where Category == '%s' and ResourceId == '%s'", category, upperResourceID)
+		actuallyUsingResourceSpecific = false
 	}
 
 	// Add log level filtering for non-audit logs
 	if logLevel != "" && !isAuditCategory(category) {
-		if isResourceSpecific {
+		if actuallyUsingResourceSpecific {
 			// In resource-specific tables, log level is stored in the Level field as "INFO", "WARNING", "ERROR"
 			// Convert the requested log level to the format used in resource-specific tables
 			switch strings.ToLower(logLevel) {
@@ -90,7 +94,7 @@ func BuildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourc
 	baseQuery += fmt.Sprintf(" | limit %d", maxRecords)
 
 	// Project essential fields - adjust based on table type
-	if isResourceSpecific {
+	if actuallyUsingResourceSpecific {
 		// Resource-specific tables have different field names based on the table type
 		if tableName, exists := resourceSpecificTables[category]; exists {
 			if tableName == "AKSAudit" || tableName == "AKSAuditAdmin" {
