@@ -158,19 +158,73 @@ Show me the network security groups associated with my cluster.
 The AKS-MCP server provides the following tools for interacting with AKS clusters:
 
 <details>
-<summary>Cluster Tools</summary>
+<summary>AKS Cluster Management Tools (Read-Only)</summary>
 
-- `get_cluster_info`: Get detailed information about an AKS cluster
-- `list_aks_clusters`: List all AKS clusters in a subscription and optional resource group
+- `az_aks_show`: Show the details of a managed Kubernetes cluster
+- `az_aks_list`: List managed Kubernetes clusters
+- `az_aks_get-versions`: Get the versions available for creating a managed Kubernetes cluster
+- `az_aks_check-network_outbound`: Perform outbound network connectivity check for a node
+- `az_aks_nodepool_list`: List node pools in a managed Kubernetes cluster
+- `az_aks_nodepool_show`: Show the details for a node pool in the managed Kubernetes cluster
+</details>
+
+<details>
+<summary>AKS Cluster Management Tools (Read-Write)</summary>
+
+*Available with `--access-level readwrite` or `admin`*
+
+- `az_aks_create`: Create a new managed Kubernetes cluster
+- `az_aks_delete`: Delete a managed Kubernetes cluster
+- `az_aks_scale`: Scale the node pool in a managed Kubernetes cluster
+- `az_aks_update`: Update a managed Kubernetes cluster
+- `az_aks_upgrade`: Upgrade a managed Kubernetes cluster to a newer version
+- `az_aks_nodepool_add`: Add a node pool to the managed Kubernetes cluster
+- `az_aks_nodepool_delete`: Delete a node pool from the managed Kubernetes cluster
+- `az_aks_nodepool_scale`: Scale a node pool in a managed Kubernetes cluster
+- `az_aks_nodepool_upgrade`: Upgrade a node pool to a newer version
+</details>
+
+<details>
+<summary>AKS Cluster Management Tools (Admin)</summary>
+
+*Available with `--access-level admin` only*
+
+- `az_aks_get-credentials`: Get access credentials for a managed Kubernetes cluster
 </details>
 
 <details>
 <summary>Network Tools</summary>
 
 - `get_vnet_info`: Get information about the VNet used by the AKS cluster
-- `get_subnet_info`: Get information about the subnets used by the AKS cluster
-- `get_route_table_info`: Get information about the route tables used by the AKS cluster
-- `get_nsg_info`: Get information about the network security groups used by the AKS cluster
+- `get_subnet_info`: Get information about the Subnet used by the AKS cluster
+- `get_route_table_info`: Get information about the Route Table used by the AKS cluster
+- `get_nsg_info`: Get information about the Network Security Group used by the AKS cluster
+- `get_load_balancers_info`: Get information about all Load Balancers used by the AKS cluster
+- `get_private_endpoint_info`: Get information about the private endpoint used by the AKS cluster
+</details>
+
+<details>
+<summary>Compute Tools</summary>
+
+- `get_aks_vmss_info`: Get detailed VMSS configuration for node pools in the AKS cluster
+- `az_vmss_run-command_invoke`: Execute a command on instances of a Virtual Machine Scale Set (readwrite/admin)
+</details>
+
+<details>
+<summary>Monitor Tools</summary>
+
+- `az_monitor_metrics_list`: List the metric values for a resource
+- `az_monitor_metrics_list-definitions`: List the metric definitions for a resource
+- `az_monitor_metrics_list-namespaces`: List the metric namespaces for a resource
+- `az_monitor_activity_log_resource_health`: Retrieve resource health events for AKS clusters
+- `az_monitor_app_insights_query`: Execute KQL queries against Application Insights telemetry data
+</details>
+
+<details>
+<summary>AKS Control Plane Tools</summary>
+
+- `aks_control_plane_diagnostic_settings`: Check if AKS cluster has diagnostic settings configured
+- `aks_control_plane_logs`: Query AKS control plane logs with safety constraints and time range validation
 </details>
 
 <details>
@@ -180,6 +234,28 @@ The AKS-MCP server provides the following tools for interacting with AKS cluster
   - Supports operations: list, show, create, update, delete, start, stop
   - Supports resources: fleet, member, updaterun, updatestrategy
   - Requires readwrite or admin access for write operations
+</details>
+
+<details>
+<summary>Detector Tools</summary>
+
+- `list_detectors`: List all available AKS cluster detectors
+- `run_detector`: Run a specific AKS detector
+- `run_detectors_by_category`: Run all detectors in a specific category
+</details>
+
+<details>
+<summary>Azure Advisor Tools</summary>
+
+- `az_advisor_recommendation`: Retrieve and manage Azure Advisor recommendations for AKS clusters
+</details>
+
+<details>
+<summary>Account Management Tools</summary>
+
+- `az_account_list`: List all subscriptions for the authenticated account
+- `az_account_set`: Set a subscription as the current active subscription
+- `az_login`: Log in to Azure using service principal credentials
 </details>
 
 ## Contributing
