@@ -15,8 +15,12 @@ import (
 	"github.com/Azure/aks-mcp/internal/components/monitor/diagnostics"
 	"github.com/Azure/aks-mcp/internal/components/network"
 	"github.com/Azure/aks-mcp/internal/config"
+	"github.com/Azure/aks-mcp/internal/k8s"
 	"github.com/Azure/aks-mcp/internal/tools"
 	"github.com/Azure/aks-mcp/internal/version"
+	"github.com/Azure/mcp-kubernetes/pkg/cilium"
+	"github.com/Azure/mcp-kubernetes/pkg/helm"
+	"github.com/Azure/mcp-kubernetes/pkg/kubectl"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -61,6 +65,9 @@ func (s *Service) Initialize() error {
 
 	// Register AKS Control Plane tools
 	s.registerControlPlaneTools()
+
+	// Register Kubernetes tools
+	s.registerKubernetesTools()
 
 	return nil
 }
@@ -314,4 +321,62 @@ func (s *Service) registerAdvisorTools() {
 	log.Println("Registering advisor tool: az_advisor_recommendation")
 	advisorTool := advisor.RegisterAdvisorRecommendationTool()
 	s.mcpServer.AddTool(advisorTool, tools.CreateResourceHandler(advisor.GetAdvisorRecommendationHandler(s.cfg), s.cfg))
+}
+
+// registerKubernetesTools registers Kubernetes-related tools (kubectl, helm, cilium)
+func (s *Service) registerKubernetesTools() {
+	log.Println("Registering Kubernetes tools...")
+
+	// Register kubectl commands based on access level
+	s.registerKubectlCommands()
+
+	// Register helm if enabled
+	if s.cfg.AdditionalTools["helm"] {
+		log.Println("Registering Kubernetes tool: helm")
+		helmTool := helm.RegisterHelm()
+		helmExecutor := k8s.WrapK8sExecutor(helm.NewExecutor())
+		s.mcpServer.AddTool(helmTool, tools.CreateToolHandler(helmExecutor, s.cfg))
+	}
+
+	// Register cilium if enabled
+	if s.cfg.AdditionalTools["cilium"] {
+		log.Println("Registering Kubernetes tool: cilium")
+		ciliumTool := cilium.RegisterCilium()
+		ciliumExecutor := k8s.WrapK8sExecutor(cilium.NewExecutor())
+		s.mcpServer.AddTool(ciliumTool, tools.CreateToolHandler(ciliumExecutor, s.cfg))
+	}
+}
+
+// registerKubectlCommands registers kubectl commands based on access level
+func (s *Service) registerKubectlCommands() {
+	// Register read-only kubectl commands (available at all access levels)
+	for _, cmd := range kubectl.GetReadOnlyKubectlCommands() {
+		log.Printf("Registering kubectl command: %s", cmd.Name)
+		kubectlTool := kubectl.RegisterKubectlCommand(cmd)
+		k8sExecutor := kubectl.CreateCommandExecutorFunc(cmd.Name)
+		wrappedExecutor := k8s.WrapK8sExecutorFunc(k8sExecutor)
+		s.mcpServer.AddTool(kubectlTool, tools.CreateToolHandler(wrappedExecutor, s.cfg))
+	}
+
+	// Register read-write commands if access level is readwrite or admin
+	if s.cfg.AccessLevel == "readwrite" || s.cfg.AccessLevel == "admin" {
+		for _, cmd := range kubectl.GetReadWriteKubectlCommands() {
+			log.Printf("Registering kubectl command: %s", cmd.Name)
+			kubectlTool := kubectl.RegisterKubectlCommand(cmd)
+			k8sExecutor := kubectl.CreateCommandExecutorFunc(cmd.Name)
+			wrappedExecutor := k8s.WrapK8sExecutorFunc(k8sExecutor)
+			s.mcpServer.AddTool(kubectlTool, tools.CreateToolHandler(wrappedExecutor, s.cfg))
+		}
+	}
+
+	// Register admin commands only if access level is admin
+	if s.cfg.AccessLevel == "admin" {
+		for _, cmd := range kubectl.GetAdminKubectlCommands() {
+			log.Printf("Registering kubectl command: %s", cmd.Name)
+			kubectlTool := kubectl.RegisterKubectlCommand(cmd)
+			k8sExecutor := kubectl.CreateCommandExecutorFunc(cmd.Name)
+			wrappedExecutor := k8s.WrapK8sExecutorFunc(k8sExecutor)
+			s.mcpServer.AddTool(kubectlTool, tools.CreateToolHandler(wrappedExecutor, s.cfg))
+		}
+	}
 }

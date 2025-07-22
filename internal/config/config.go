@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Azure/aks-mcp/internal/security"
@@ -21,17 +22,25 @@ type ConfigData struct {
 	Host        string
 	Port        int
 	AccessLevel string
+
+	// Kubernetes-specific options
+	// Map of additional tools enabled (helm, cilium)
+	AdditionalTools map[string]bool
+	// Comma-separated list of allowed Kubernetes namespaces
+	AllowNamespaces string
 }
 
 // NewConfig creates and returns a new configuration instance
 func NewConfig() *ConfigData {
 	return &ConfigData{
-		Timeout:        60,
-		CacheTimeout:   1 * time.Minute,
-		SecurityConfig: security.NewSecurityConfig(),
-		Transport:      "stdio",
-		Port:           8000,
-		AccessLevel:    "readonly",
+		Timeout:         60,
+		CacheTimeout:    1 * time.Minute,
+		SecurityConfig:  security.NewSecurityConfig(),
+		Transport:       "stdio",
+		Port:            8000,
+		AccessLevel:     "readonly",
+		AdditionalTools: make(map[string]bool),
+		AllowNamespaces: "",
 	}
 }
 
@@ -45,8 +54,23 @@ func (cfg *ConfigData) ParseFlags() {
 	// Security settings
 	flag.StringVar(&cfg.AccessLevel, "access-level", "readonly", "Access level (readonly, readwrite, admin)")
 
+	// Kubernetes-specific settings
+	additionalTools := flag.String("additional-tools", "",
+		"Comma-separated list of additional Kubernetes tools to support (kubectl is always enabled). Available: helm,cilium")
+	flag.StringVar(&cfg.AllowNamespaces, "allow-namespaces", "",
+		"Comma-separated list of allowed Kubernetes namespaces (empty means all namespaces)")
+
 	flag.Parse()
 
 	// Update security config
 	cfg.SecurityConfig.AccessLevel = cfg.AccessLevel
+	cfg.SecurityConfig.AllowedNamespaces = cfg.AllowNamespaces
+
+	// Parse additional tools
+	if *additionalTools != "" {
+		tools := strings.Split(*additionalTools, ",")
+		for _, tool := range tools {
+			cfg.AdditionalTools[strings.TrimSpace(tool)] = true
+		}
+	}
 }
