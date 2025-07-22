@@ -34,7 +34,7 @@ func ConvertConfig(cfg *config.ConfigData) *k8sconfig.ConfigData {
 		Transport:       cfg.Transport,
 		Host:            cfg.Host,
 		Port:            cfg.Port,
-		ReadOnly:        cfg.ReadOnly,
+		ReadOnly:        k8sSecurityConfig.ReadOnly,
 		AllowNamespaces: cfg.AllowNamespaces,
 	}
 

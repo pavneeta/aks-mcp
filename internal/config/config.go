@@ -28,8 +28,6 @@ type ConfigData struct {
 	AdditionalTools map[string]bool
 	// Comma-separated list of allowed Kubernetes namespaces
 	AllowNamespaces string
-	// Read-only mode for Kubernetes operations
-	ReadOnly bool
 }
 
 // NewConfig creates and returns a new configuration instance
@@ -43,7 +41,6 @@ func NewConfig() *ConfigData {
 		AccessLevel:     "readonly",
 		AdditionalTools: make(map[string]bool),
 		AllowNamespaces: "",
-		ReadOnly:        false,
 	}
 }
 
@@ -62,8 +59,6 @@ func (cfg *ConfigData) ParseFlags() {
 		"Comma-separated list of additional Kubernetes tools to support (kubectl is always enabled). Available: helm,cilium")
 	flag.StringVar(&cfg.AllowNamespaces, "allow-namespaces", "",
 		"Comma-separated list of allowed Kubernetes namespaces (empty means all namespaces)")
-	flag.BoolVar(&cfg.ReadOnly, "k8s-readonly", false,
-		"Enable read-only mode for Kubernetes operations")
 
 	flag.Parse()
 
