@@ -181,12 +181,8 @@ func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				// Log the panic for debugging but provide a helpful error message
-				fmt.Printf("Panic in placement operation %s: %v\n", operation, r)
+				// Provide a helpful error message without stdout pollution
 				err = fmt.Errorf("kubectl operation failed. Please ensure kubectl is installed, properly configured, and the cluster is accessible. Error: %v", r)
-			} else if err != nil {
-				// If there's an error but no panic, include it in the response
-				fmt.Printf("Error in placement operation %s: %v\n", operation, err)
 			}
 		}()
 
@@ -202,9 +198,27 @@ func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *
 		default:
 			err = fmt.Errorf("unsupported placement operation: %s", operation)
 		}
+		
 	}()
 
+	// Clean and validate the result for MCP compatibility
+	if err == nil {
+		result = cleanResult(result)
+	}
+
 	return result, err
+}
+
+// cleanResult sanitizes the result for MCP compatibility
+func cleanResult(result string) string {
+	// Just clean problematic characters and return as-is
+	cleaned := result
+	cleaned = strings.ReplaceAll(cleaned, "\x00", "")    // Null bytes
+	cleaned = strings.ReplaceAll(cleaned, "\r", "")      // Carriage returns  
+	cleaned = strings.ReplaceAll(cleaned, "\x1b", "")    // Escape sequences
+	cleaned = strings.TrimSpace(cleaned)
+	
+	return cleaned
 }
 
 // initializeKubernetesClient initializes the Kubernetes client
