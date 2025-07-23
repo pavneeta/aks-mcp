@@ -13,16 +13,6 @@ func ConvertConfig(cfg *config.ConfigData) *k8sconfig.ConfigData {
 	// Create K8s security config
 	k8sSecurityConfig := k8ssecurity.NewSecurityConfig()
 
-	// Map access levels
-	switch cfg.AccessLevel {
-	case "readonly":
-		k8sSecurityConfig.ReadOnly = true
-	case "readwrite":
-		k8sSecurityConfig.ReadOnly = false
-	case "admin":
-		k8sSecurityConfig.ReadOnly = false
-	}
-
 	// Map allowed namespaces
 	k8sSecurityConfig.SetAllowedNamespaces(cfg.AllowNamespaces)
 
@@ -34,7 +24,7 @@ func ConvertConfig(cfg *config.ConfigData) *k8sconfig.ConfigData {
 		Transport:       cfg.Transport,
 		Host:            cfg.Host,
 		Port:            cfg.Port,
-		ReadOnly:        k8sSecurityConfig.ReadOnly,
+		AccessLevel:     cfg.AccessLevel,
 		AllowNamespaces: cfg.AllowNamespaces,
 	}
 
