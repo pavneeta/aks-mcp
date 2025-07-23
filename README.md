@@ -251,6 +251,51 @@ The AKS-MCP server provides the following tools for interacting with AKS cluster
 </details>
 
 <details>
+<summary>Kubernetes Tools</summary>
+
+*Note: kubectl commands are available with all access levels. Additional tools (helm, cilium) require explicit enablement via `--additional-tools`*
+
+**kubectl Commands (Read-Only):**
+- `kubectl_get`: Display one or many resources
+- `kubectl_describe`: Show details of a specific resource or group of resources
+- `kubectl_explain`: Documentation of resources
+- `kubectl_logs`: Print the logs for a container in a pod
+- `kubectl_api-resources`: Print the supported API resources on the server
+- `kubectl_api-versions`: Print the supported API versions on the server
+- `kubectl_diff`: Diff live configuration against a would-be applied file
+- `kubectl_cluster-info`: Display cluster info
+- `kubectl_top`: Display resource usage
+- `kubectl_events`: List events in the cluster
+- `kubectl_auth`: Inspect authorization
+
+**kubectl Commands (Read-Write/Admin):**
+- `kubectl_create`: Create a resource from a file or from stdin
+- `kubectl_delete`: Delete resources by file names, stdin, resources and names, or by resources and label selector
+- `kubectl_apply`: Apply a configuration to a resource by file name or stdin
+- `kubectl_expose`: Take a replication controller, service, deployment or pod and expose it as a new Kubernetes Service
+- `kubectl_run`: Run a particular image on the cluster
+- `kubectl_set`: Set specific features on objects
+- `kubectl_rollout`: Manage the rollout of a resource
+- `kubectl_scale`: Set a new size for a Deployment, ReplicaSet, Replication Controller, or StatefulSet
+- `kubectl_autoscale`: Auto-scale a Deployment, ReplicaSet, or StatefulSet
+- `kubectl_label`: Update the labels on a resource
+- `kubectl_annotate`: Update the annotations on a resource
+- `kubectl_patch`: Update field(s) of a resource
+- `kubectl_replace`: Replace a resource by file name or stdin
+- `kubectl_cp`: Copy files and directories to and from containers
+- `kubectl_exec`: Execute a command in a container
+- `kubectl_cordon`: Mark node as unschedulable
+- `kubectl_uncordon`: Mark node as schedulable
+- `kubectl_drain`: Drain node in preparation for maintenance
+- `kubectl_taint`: Update the taints on one or more nodes
+- `kubectl_certificate`: Modify certificate resources
+
+**Additional Tools (Optional):**
+- `helm`: Helm package manager for Kubernetes (requires `--additional-tools helm`)
+- `cilium`: Cilium CLI for eBPF-based networking and security (requires `--additional-tools cilium`)
+</details>
+
+<details>
 <summary>Account Management Tools</summary>
 
 - `az_account_list`: List all subscriptions for the authenticated account
