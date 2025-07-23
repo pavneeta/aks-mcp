@@ -2,7 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
-	
+
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/k8s"
 	"github.com/Azure/aks-mcp/internal/tools"
@@ -18,10 +18,10 @@ type Client struct {
 func NewClient() (*Client, error) {
 	// Create the mcp-kubernetes kubectl executor
 	k8sExecutor := kubectl.NewExecutor()
-	
+
 	// Wrap it using the adapter to work with aks-mcp config
 	wrappedExecutor := k8s.WrapK8sExecutor(k8sExecutor)
-	
+
 	return &Client{
 		executor: wrappedExecutor,
 	}, nil
@@ -35,7 +35,7 @@ func (c *Client) ExecuteKubectl(command string, cfg *config.ConfigData) (string,
 	if c.executor == nil {
 		return "", fmt.Errorf("kubectl executor is nil")
 	}
-	
+
 	params := map[string]interface{}{
 		"command": command,
 	}

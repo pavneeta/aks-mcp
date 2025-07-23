@@ -177,7 +177,7 @@ func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *
 	// Execute the placement operation with error recovery
 	var result string
 	var err error
-	
+
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -198,7 +198,7 @@ func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *
 		default:
 			err = fmt.Errorf("unsupported placement operation: %s", operation)
 		}
-		
+
 	}()
 
 	// Clean and validate the result for MCP compatibility
@@ -213,11 +213,11 @@ func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *
 func cleanResult(result string) string {
 	// Just clean problematic characters and return as-is
 	cleaned := result
-	cleaned = strings.ReplaceAll(cleaned, "\x00", "")    // Null bytes
-	cleaned = strings.ReplaceAll(cleaned, "\r", "")      // Carriage returns  
-	cleaned = strings.ReplaceAll(cleaned, "\x1b", "")    // Escape sequences
+	cleaned = strings.ReplaceAll(cleaned, "\x00", "") // Null bytes
+	cleaned = strings.ReplaceAll(cleaned, "\r", "")   // Carriage returns
+	cleaned = strings.ReplaceAll(cleaned, "\x1b", "") // Escape sequences
 	cleaned = strings.TrimSpace(cleaned)
-	
+
 	return cleaned
 }
 
@@ -250,7 +250,7 @@ func (e *FleetExecutor) initializeKubernetesClient() error {
 // validatePlacementCombination validates placement operations
 func (e *FleetExecutor) validatePlacementCombination(operation string) error {
 	validPlacementOps := []string{"list", "show", "get", "create", "delete"}
-	
+
 	for _, validOp := range validPlacementOps {
 		if operation == validOp {
 			return nil
