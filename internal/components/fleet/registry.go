@@ -21,15 +21,15 @@ Available operations and resources:
 - member: list, show, create, update, delete  
 - updaterun: list, show, create, start, stop, delete
 - updatestrategy: list, show, create, delete
-- placement: list, show, get, create, delete (Kubernetes CRD operations)
+- clusterresourceplacement: list, show, get, create, delete (Kubernetes CRD operations)
 
 Examples:
 - List fleets: operation='list', resource='fleet', args='--resource-group myRG'
 - Show fleet: operation='show', resource='fleet', args='--name myFleet --resource-group myRG'  
 - Get fleet credentials: operation='get-credentials', resource='fleet', args='--name myFleet --resource-group myRG'
 - Create member: operation='create', resource='member', args='--name myMember --fleet-name myFleet --resource-group myRG --member-cluster-id /subscriptions/.../myCluster'
-- Create placement: operation='create', resource='placement', args='--name nginx --selector app=nginx --policy PickAll'
-- List placements: operation='list', resource='placement', args=''`
+- Create clusterresourceplacement: operation='create', resource='clusterresourceplacement', args='--name nginx --selector app=nginx --policy PickAll'
+- List clusterresourceplacements: operation='list', resource='clusterresourceplacement', args=''`
 
 	return mcp.NewTool("az_fleet",
 		mcp.WithDescription(description),
@@ -39,7 +39,7 @@ Examples:
 		),
 		mcp.WithString("resource",
 			mcp.Required(),
-			mcp.Description("The resource type to operate on. Valid values: fleet, member, updaterun, updatestrategy, placement"),
+			mcp.Description("The resource type to operate on. Valid values: fleet, member, updaterun, updatestrategy, clusterresourceplacement"),
 		),
 		mcp.WithString("args",
 			mcp.Required(),

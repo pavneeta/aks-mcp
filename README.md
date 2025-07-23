@@ -241,13 +241,13 @@ The AKS-MCP server provides the following tools for interacting with AKS cluster
 
 - `az_fleet`: Execute Azure Fleet commands with structured parameters for AKS Fleet management
   - Supports operations: list, show, create, update, delete, start, stop, get-credentials
-  - Supports resources: fleet, member, updaterun, updatestrategy, placement
+  - Supports resources: fleet, member, updaterun, updatestrategy, clusterresourceplacement
   - Requires readwrite or admin access for write operations
-  - **Kubernetes Placement Operations**: Create and manage ClusterResourcePlacements
-    - `placement create`: Create new ClusterResourcePlacement with policy and selectors
-    - `placement list`: List all ClusterResourcePlacements
-    - `placement show/get`: Show ClusterResourcePlacement details
-    - `placement delete`: Delete ClusterResourcePlacement
+  - **Kubernetes ClusterResourcePlacement Operations**: Create and manage ClusterResourcePlacements
+    - `clusterresourceplacement create`: Create new ClusterResourcePlacement with policy and selectors
+    - `clusterresourceplacement list`: List all ClusterResourcePlacements
+    - `clusterresourceplacement show/get`: Show ClusterResourcePlacement details
+    - `clusterresourceplacement delete`: Delete ClusterResourcePlacement
 </details>
 
 <details>

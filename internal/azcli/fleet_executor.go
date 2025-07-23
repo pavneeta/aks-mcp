@@ -42,13 +42,13 @@ func (e *FleetExecutor) Execute(params map[string]interface{}, cfg *config.Confi
 		return "", fmt.Errorf("args parameter is required and must be a string")
 	}
 
-	// Route placement operations to Kubernetes
-	if resource == "placement" {
-		// Validate placement operations separately
-		if err := e.validatePlacementCombination(operation); err != nil {
+	// Route clusterresourceplacement operations to Kubernetes
+	if resource == "clusterresourceplacement" {
+		// Validate clusterresourceplacement operations separately
+		if err := e.validateClusterResourcePlacementCombination(operation); err != nil {
 			return "", err
 		}
-		return e.executeKubernetesPlacement(operation, args, cfg)
+		return e.executeKubernetesClusterResourcePlacement(operation, args, cfg)
 	}
 
 	// Validate operation/resource combination for non-placement resources
@@ -149,10 +149,10 @@ func (e *FleetExecutor) GetCommandForValidation(operation, resource, args string
 	return command
 }
 
-// executeKubernetesPlacement handles placement operations via Kubernetes API
-func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *config.ConfigData) (string, error) {
-	// Check access level for placement operations
-	if err := e.checkAccessLevel(operation, "placement", cfg.AccessLevel); err != nil {
+// executeKubernetesClusterResourcePlacement handles clusterresourceplacement operations via Kubernetes API
+func (e *FleetExecutor) executeKubernetesClusterResourcePlacement(operation, args string, cfg *config.ConfigData) (string, error) {
+	// Check access level for clusterresourceplacement operations
+	if err := e.checkAccessLevel(operation, "clusterresourceplacement", cfg.AccessLevel); err != nil {
 		return "", err
 	}
 
@@ -165,16 +165,16 @@ func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *
 
 	// Check if placement operations are initialized
 	if e.placementOps == nil {
-		return "", fmt.Errorf("placement operations not initialized")
+		return "", fmt.Errorf("clusterresourceplacement operations not initialized")
 	}
 
 	// Parse arguments
 	parsedArgs, parseErr := kubernetes.ParsePlacementArgs(args)
 	if parseErr != nil {
-		return "", fmt.Errorf("failed to parse placement arguments: %w", parseErr)
+		return "", fmt.Errorf("failed to parse clusterresourceplacement arguments: %w", parseErr)
 	}
 
-	// Execute the placement operation with error recovery
+	// Execute the clusterresourceplacement operation with error recovery
 	var result string
 	var err error
 
@@ -188,15 +188,15 @@ func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *
 
 		switch operation {
 		case "create":
-			result, err = e.createPlacement(parsedArgs, cfg)
+			result, err = e.createClusterResourcePlacement(parsedArgs, cfg)
 		case "get", "show":
-			result, err = e.getPlacement(parsedArgs, cfg)
+			result, err = e.getClusterResourcePlacement(parsedArgs, cfg)
 		case "list":
 			result, err = e.placementOps.ListPlacements(cfg)
 		case "delete":
-			result, err = e.deletePlacement(parsedArgs, cfg)
+			result, err = e.deleteClusterResourcePlacement(parsedArgs, cfg)
 		default:
-			err = fmt.Errorf("unsupported placement operation: %s", operation)
+			err = fmt.Errorf("unsupported clusterresourceplacement operation: %s", operation)
 		}
 
 	}()
@@ -247,22 +247,22 @@ func (e *FleetExecutor) initializeKubernetesClient() error {
 	return nil
 }
 
-// validatePlacementCombination validates placement operations
-func (e *FleetExecutor) validatePlacementCombination(operation string) error {
-	validPlacementOps := []string{"list", "show", "get", "create", "delete"}
+// validateClusterResourcePlacementCombination validates clusterresourceplacement operations
+func (e *FleetExecutor) validateClusterResourcePlacementCombination(operation string) error {
+	validOps := []string{"list", "show", "get", "create", "delete"}
 
-	for _, validOp := range validPlacementOps {
+	for _, validOp := range validOps {
 		if operation == validOp {
 			return nil
 		}
 	}
 
-	return fmt.Errorf("invalid operation '%s' for resource 'placement'. Valid operations: %s",
-		operation, strings.Join(validPlacementOps, ", "))
+	return fmt.Errorf("invalid operation '%s' for resource 'clusterresourceplacement'. Valid operations: %s",
+		operation, strings.Join(validOps, ", "))
 }
 
-// createPlacement creates a placement using placement operations
-func (e *FleetExecutor) createPlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
+// createClusterResourcePlacement creates a clusterresourceplacement using placement operations
+func (e *FleetExecutor) createClusterResourcePlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
 	name, ok := args["name"]
 	if !ok || name == "" {
 		return "", fmt.Errorf("--name is required for create operation")
@@ -293,8 +293,8 @@ func (e *FleetExecutor) createPlacement(args map[string]string, cfg *config.Conf
 	return e.placementOps.CreatePlacement(name, selector, policy, cfg)
 }
 
-// getPlacement retrieves a placement using placement operations
-func (e *FleetExecutor) getPlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
+// getClusterResourcePlacement retrieves a clusterresourceplacement using placement operations
+func (e *FleetExecutor) getClusterResourcePlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
 	name, ok := args["name"]
 	if !ok || name == "" {
 		return "", fmt.Errorf("--name is required for get/show operation")
@@ -303,8 +303,8 @@ func (e *FleetExecutor) getPlacement(args map[string]string, cfg *config.ConfigD
 	return e.placementOps.GetPlacement(name, cfg)
 }
 
-// deletePlacement deletes a placement using placement operations
-func (e *FleetExecutor) deletePlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
+// deleteClusterResourcePlacement deletes a clusterresourceplacement using placement operations
+func (e *FleetExecutor) deleteClusterResourcePlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
 	name, ok := args["name"]
 	if !ok || name == "" {
 		return "", fmt.Errorf("--name is required for delete operation")

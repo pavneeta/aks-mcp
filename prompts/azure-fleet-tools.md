@@ -40,7 +40,7 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
 
 {
   "operation": "create",
-  "resource": "placement",
+  "resource": "clusterresourceplacement",
   "args": "--name nginx --policy PickAll --selector app=nginx"
 }
 
@@ -74,10 +74,10 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
 #### Fleet Credentials
 - `az fleet get-credentials` - Get kubeconfig credentials for a fleet
 
-#### Kubernetes Placement Operations (Cluster-scoped CRDs)
-- `placement list` - List all ClusterResourcePlacements
-- `placement show` - Show details of a specific ClusterResourcePlacement
-- `placement get` - Get a specific ClusterResourcePlacement (alias for show)
+#### Kubernetes ClusterResourcePlacement Operations (Cluster-scoped CRDs)
+- `clusterresourceplacement list` - List all ClusterResourcePlacements
+- `clusterresourceplacement show` - Show details of a specific ClusterResourcePlacement
+- `clusterresourceplacement get` - Get a specific ClusterResourcePlacement (alias for show)
 
 ### Read-Write Commands (Available at readwrite and admin access levels)
 
@@ -101,9 +101,9 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
 - `az fleet updatestrategy create` - Create a new update strategy
 - `az fleet updatestrategy delete` - Delete an update strategy
 
-#### Kubernetes Placement Management (Cluster-scoped CRDs)
-- `placement create` - Create a new ClusterResourcePlacement
-- `placement delete` - Delete a ClusterResourcePlacement
+#### Kubernetes ClusterResourcePlacement Management (Cluster-scoped CRDs)
+- `clusterresourceplacement create` - Create a new ClusterResourcePlacement
+- `clusterresourceplacement delete` - Delete a ClusterResourcePlacement
 
 ### Admin Commands (Available only at admin access level)
 - Currently no admin-only fleet commands defined
@@ -167,8 +167,8 @@ s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewFleetExecutor(),
 - ✅ `az fleet updaterun show` - Show update run details
 - ✅ `az fleet updatestrategy list` - List update strategies
 - ✅ `az fleet updatestrategy show` - Show update strategy details
-- ✅ `placement list` - List ClusterResourcePlacements
-- ✅ `placement show/get` - Show ClusterResourcePlacement details
+- ✅ `clusterresourceplacement list` - List ClusterResourcePlacements
+- ✅ `clusterresourceplacement show/get` - Show ClusterResourcePlacement details
 
 ### Readwrite Access
 - Inherits all readonly commands
@@ -176,7 +176,7 @@ s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewFleetExecutor(),
 - ✅ `az fleet member create/update/delete` - Member management
 - ✅ `az fleet updaterun create/start/stop/delete` - Update run management
 - ✅ `az fleet updatestrategy create/delete` - Update strategy management
-- ✅ `placement create/delete` - ClusterResourcePlacement management
+- ✅ `clusterresourceplacement create/delete` - ClusterResourcePlacement management
 
 ### Admin Access
 - Inherits all readwrite commands
@@ -236,34 +236,34 @@ az fleet updatestrategy create --name myStrategy --fleet-name myFleet --resource
 az fleet updatestrategy list --fleet-name myFleet --resource-group myResourceGroup
 ```
 
-### Kubernetes Placement Management
+### Kubernetes ClusterResourcePlacement Management
 Manage ClusterResourcePlacements for fleet workload distribution:
 ```bash
-# Create a placement for nginx workloads
+# Create a ClusterResourcePlacement for nginx workloads
 az_fleet with parameters: {
   "operation": "create",
-  "resource": "placement",
+  "resource": "clusterresourceplacement",
   "args": "--name nginx --policy PickAll --selector app=nginx"
 }
 
-# List all placements
+# List all ClusterResourcePlacements
 az_fleet with parameters: {
   "operation": "list",
-  "resource": "placement",
+  "resource": "clusterresourceplacement",
   "args": ""
 }
 
-# Show placement details
+# Show ClusterResourcePlacement details
 az_fleet with parameters: {
   "operation": "show",
-  "resource": "placement",
+  "resource": "clusterresourceplacement",
   "args": "--name nginx"
 }
 
-# Delete a placement
+# Delete a ClusterResourcePlacement
 az_fleet with parameters: {
   "operation": "delete",
-  "resource": "placement",
+  "resource": "clusterresourceplacement",
   "args": "--name nginx"
 }
 ```
@@ -309,12 +309,12 @@ az_fleet with parameters: {
   "args": "--name web-cluster --fleet-name prod-fleet --resource-group production --member-cluster-id /subscriptions/.../managedClusters/web-cluster"
 }
 
-"Create a placement to deploy nginx to all clusters with the app=frontend label"
+"Create a ClusterResourcePlacement to deploy nginx to all clusters with the app=frontend label"
 
 This would translate to:
 az_fleet with parameters: {
   "operation": "create",
-  "resource": "placement",
+  "resource": "clusterresourceplacement",
   "args": "--name nginx-placement --policy PickAll --selector app=frontend"
 }
 ```
