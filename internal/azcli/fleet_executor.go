@@ -4,18 +4,23 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Azure/aks-mcp/internal/components/fleet/kubernetes"
 	"github.com/Azure/aks-mcp/internal/config"
 )
 
 // FleetExecutor handles structured fleet command execution
 type FleetExecutor struct {
 	*AzExecutor
+	k8sClient            *kubernetes.Client
+	placementOps         *kubernetes.PlacementOperations
+	k8sClientInitialized bool
 }
 
 // NewFleetExecutor creates a new fleet command executor
 func NewFleetExecutor() *FleetExecutor {
 	return &FleetExecutor{
-		AzExecutor: NewExecutor(),
+		AzExecutor:           NewExecutor(),
+		k8sClientInitialized: false,
 	}
 }
 
@@ -37,16 +42,30 @@ func (e *FleetExecutor) Execute(params map[string]interface{}, cfg *config.Confi
 		return "", fmt.Errorf("args parameter is required and must be a string")
 	}
 
-	// Validate operation/resource combination
+	// Route placement operations to Kubernetes
+	if resource == "placement" {
+		// Validate placement operations separately
+		if err := e.validatePlacementCombination(operation); err != nil {
+			return "", err
+		}
+		return e.executeKubernetesPlacement(operation, args, cfg)
+	}
+
+	// Validate operation/resource combination for non-placement resources
 	if err := e.validateCombination(operation, resource); err != nil {
 		return "", err
 	}
 
 	// Construct the full command
-	command := fmt.Sprintf("az fleet %s %s", resource, operation)
+	var command string
 	if operation == "list" && resource == "fleet" {
 		// Special case: "az fleet list" without resource in between
 		command = "az fleet list"
+	} else if operation == "get-credentials" && resource == "fleet" {
+		// Special case: "az fleet get-credentials"
+		command = "az fleet get-credentials"
+	} else {
+		command = fmt.Sprintf("az fleet %s %s", resource, operation)
 	}
 
 	// Check access level
@@ -72,7 +91,7 @@ func (e *FleetExecutor) Execute(params map[string]interface{}, cfg *config.Confi
 // validateCombination validates if the operation/resource combination is valid
 func (e *FleetExecutor) validateCombination(operation, resource string) error {
 	validCombinations := map[string][]string{
-		"fleet":          {"list", "show", "create", "update", "delete"},
+		"fleet":          {"list", "show", "create", "update", "delete", "get-credentials"},
 		"member":         {"list", "show", "create", "update", "delete"},
 		"updaterun":      {"list", "show", "create", "start", "stop", "delete"},
 		"updatestrategy": {"list", "show", "create", "delete"},
@@ -96,7 +115,7 @@ func (e *FleetExecutor) validateCombination(operation, resource string) error {
 // checkAccessLevel ensures the operation is allowed for the current access level
 func (e *FleetExecutor) checkAccessLevel(operation, resource string, accessLevel string) error {
 	// Read-only operations are allowed for all access levels
-	readOnlyOps := []string{"list", "show"}
+	readOnlyOps := []string{"list", "show", "get", "get-credentials"}
 	for _, op := range readOnlyOps {
 		if operation == op {
 			return nil
@@ -114,9 +133,13 @@ func (e *FleetExecutor) checkAccessLevel(operation, resource string, accessLevel
 
 // GetCommandForValidation returns the constructed command for security validation
 func (e *FleetExecutor) GetCommandForValidation(operation, resource, args string) string {
-	command := fmt.Sprintf("az fleet %s %s", resource, operation)
+	var command string
 	if operation == "list" && resource == "fleet" {
 		command = "az fleet list"
+	} else if operation == "get-credentials" && resource == "fleet" {
+		command = "az fleet get-credentials"
+	} else {
+		command = fmt.Sprintf("az fleet %s %s", resource, operation)
 	}
 
 	if args != "" {
@@ -124,4 +147,154 @@ func (e *FleetExecutor) GetCommandForValidation(operation, resource, args string
 	}
 
 	return command
+}
+
+// executeKubernetesPlacement handles placement operations via Kubernetes API
+func (e *FleetExecutor) executeKubernetesPlacement(operation, args string, cfg *config.ConfigData) (string, error) {
+	// Check access level for placement operations
+	if err := e.checkAccessLevel(operation, "placement", cfg.AccessLevel); err != nil {
+		return "", err
+	}
+
+	// Initialize Kubernetes client if needed
+	if !e.k8sClientInitialized {
+		if err := e.initializeKubernetesClient(); err != nil {
+			return "", err
+		}
+	}
+
+	// Check if placement operations are initialized
+	if e.placementOps == nil {
+		return "", fmt.Errorf("placement operations not initialized")
+	}
+
+	// Parse arguments
+	parsedArgs, parseErr := kubernetes.ParsePlacementArgs(args)
+	if parseErr != nil {
+		return "", fmt.Errorf("failed to parse placement arguments: %w", parseErr)
+	}
+
+	// Execute the placement operation with error recovery
+	var result string
+	var err error
+	
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// Log the panic for debugging but provide a helpful error message
+				fmt.Printf("Panic in placement operation %s: %v\n", operation, r)
+				err = fmt.Errorf("kubectl operation failed. Please ensure kubectl is installed, properly configured, and the cluster is accessible. Error: %v", r)
+			} else if err != nil {
+				// If there's an error but no panic, include it in the response
+				fmt.Printf("Error in placement operation %s: %v\n", operation, err)
+			}
+		}()
+
+		switch operation {
+		case "create":
+			result, err = e.createPlacement(parsedArgs, cfg)
+		case "get", "show":
+			result, err = e.getPlacement(parsedArgs, cfg)
+		case "list":
+			result, err = e.placementOps.ListPlacements(cfg)
+		case "delete":
+			result, err = e.deletePlacement(parsedArgs, cfg)
+		default:
+			err = fmt.Errorf("unsupported placement operation: %s", operation)
+		}
+	}()
+
+	return result, err
+}
+
+// initializeKubernetesClient initializes the Kubernetes client
+func (e *FleetExecutor) initializeKubernetesClient() error {
+	defer func() {
+		// Recover from any panics during client initialization
+		if r := recover(); r != nil {
+			e.k8sClientInitialized = false
+		}
+	}()
+
+	client, err := kubernetes.NewClient()
+	if err != nil {
+		return fmt.Errorf("failed to initialize Kubernetes client. Please ensure kubectl is installed and kubeconfig is properly configured: %w", err)
+	}
+
+	// Test if the client is actually usable
+	if client == nil {
+		return fmt.Errorf("Kubernetes client is nil after initialization")
+	}
+
+	e.k8sClient = client
+	e.placementOps = kubernetes.NewPlacementOperations(client)
+	e.k8sClientInitialized = true
+
+	return nil
+}
+
+// validatePlacementCombination validates placement operations
+func (e *FleetExecutor) validatePlacementCombination(operation string) error {
+	validPlacementOps := []string{"list", "show", "get", "create", "delete"}
+	
+	for _, validOp := range validPlacementOps {
+		if operation == validOp {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid operation '%s' for resource 'placement'. Valid operations: %s",
+		operation, strings.Join(validPlacementOps, ", "))
+}
+
+// createPlacement creates a placement using placement operations
+func (e *FleetExecutor) createPlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
+	name, ok := args["name"]
+	if !ok || name == "" {
+		return "", fmt.Errorf("--name is required for create operation")
+	}
+
+	selector := args["selector"]
+	policy := args["policy"]
+
+	// Default policy if not specified
+	if policy == "" {
+		policy = "PickAll"
+	}
+
+	// Validate policy
+	validPolicies := []string{"PickAll", "PickFixed", "PickN"}
+	isValidPolicy := false
+	for _, validPolicy := range validPolicies {
+		if strings.EqualFold(policy, validPolicy) {
+			policy = validPolicy
+			isValidPolicy = true
+			break
+		}
+	}
+	if !isValidPolicy {
+		return "", fmt.Errorf("invalid policy '%s'. Valid policies: %s", policy, strings.Join(validPolicies, ", "))
+	}
+
+	return e.placementOps.CreatePlacement(name, selector, policy, cfg)
+}
+
+// getPlacement retrieves a placement using placement operations
+func (e *FleetExecutor) getPlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
+	name, ok := args["name"]
+	if !ok || name == "" {
+		return "", fmt.Errorf("--name is required for get/show operation")
+	}
+
+	return e.placementOps.GetPlacement(name, cfg)
+}
+
+// deletePlacement deletes a placement using placement operations
+func (e *FleetExecutor) deletePlacement(args map[string]string, cfg *config.ConfigData) (string, error) {
+	name, ok := args["name"]
+	if !ok || name == "" {
+		return "", fmt.Errorf("--name is required for delete operation")
+	}
+
+	return e.placementOps.DeletePlacement(name, cfg)
 }

@@ -14,8 +14,8 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
 **Purpose**: Execute Azure Fleet commands for AKS Fleet management with structured parameters
 
 **Parameters**:
-- `operation` (required): The operation to perform (list, show, create, update, delete, start, stop)
-- `resource` (required): The resource type to operate on (fleet, member, updaterun, updatestrategy)
+- `operation` (required): The operation to perform (list, show, create, update, delete, start, stop, get-credentials)
+- `resource` (required): The resource type to operate on (fleet, member, updaterun, updatestrategy, placement)
 - `args` (required): Additional arguments for the command
 
 **Example Usage**:
@@ -36,6 +36,18 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
   "operation": "create",
   "resource": "fleet",
   "args": "--name myFleet --resource-group myResourceGroup --location eastus"
+}
+
+{
+  "operation": "create",
+  "resource": "placement",
+  "args": "--name nginx --policy PickAll --selector app=nginx"
+}
+
+{
+  "operation": "get-credentials",
+  "resource": "fleet",
+  "args": "--name myFleet --resource-group myResourceGroup"
 }
 ```
 
@@ -59,6 +71,14 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
 - `az fleet updatestrategy list` - List all update strategies for a fleet
 - `az fleet updatestrategy show` - Show details of a specific update strategy
 
+#### Fleet Credentials
+- `az fleet get-credentials` - Get kubeconfig credentials for a fleet
+
+#### Kubernetes Placement Operations (Cluster-scoped CRDs)
+- `placement list` - List all ClusterResourcePlacements
+- `placement show` - Show details of a specific ClusterResourcePlacement
+- `placement get` - Get a specific ClusterResourcePlacement (alias for show)
+
 ### Read-Write Commands (Available at readwrite and admin access levels)
 
 #### Fleet Management
@@ -81,6 +101,10 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
 - `az fleet updatestrategy create` - Create a new update strategy
 - `az fleet updatestrategy delete` - Delete an update strategy
 
+#### Kubernetes Placement Management (Cluster-scoped CRDs)
+- `placement create` - Create a new ClusterResourcePlacement
+- `placement delete` - Delete a ClusterResourcePlacement
+
 ### Admin Commands (Available only at admin access level)
 - Currently no admin-only fleet commands defined
 - Admin users get all readwrite commands by default
@@ -91,18 +115,26 @@ This component provides Azure Fleet command-line tools for managing AKS Fleet re
 ```
 internal/components/fleet/
 ├── registry.go          # Fleet tool registration and command definitions
-└── registry_test.go     # Unit tests for the registry
+├── registry_test.go     # Unit tests for the registry
+└── kubernetes/
+    ├── client.go        # Kubernetes client wrapper using k8s adapter
+    └── placement.go     # ClusterResourcePlacement operations
 
 internal/azcli/
-├── fleet_executor.go    # Specialized fleet command executor with parameter validation
+├── fleet_executor.go    # Unified fleet command executor (Azure CLI + Kubernetes)
 └── fleet_executor_test.go # Unit tests for the fleet executor
+
+internal/k8s/
+└── adapter.go           # Config adapter for mcp-kubernetes integration
 ```
 
 ### Tool Registration
 A single generic fleet tool is registered in the MCP server:
 - **Generic Tool**: `az_fleet` - Accepts structured parameters: operation, resource, and args
 - **Access Control**: Commands are validated against the configured access level through security validation
-- **Execution**: Uses the specialized `azcli.NewFleetExecutor()` for command execution and parameter validation
+- **Execution**: Uses the unified `azcli.NewFleetExecutor()` for both Azure CLI and Kubernetes operations
+- **Kubernetes Integration**: Placement operations are routed to Kubernetes API through mcp-kubernetes adapter
+- **Config Conversion**: Uses `internal/k8s/adapter.go` to convert aks-mcp config to mcp-kubernetes format
 
 ### Fleet Command Structure
 Fleet commands are organized using the `FleetCommand` structure for documentation:
@@ -128,12 +160,15 @@ s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewFleetExecutor(),
 ### Readonly Access
 - ✅ `az fleet list` - List fleets
 - ✅ `az fleet show` - Show fleet details
+- ✅ `az fleet get-credentials` - Get fleet kubeconfig
 - ✅ `az fleet member list` - List fleet members
 - ✅ `az fleet member show` - Show fleet member details
 - ✅ `az fleet updaterun list` - List update runs
 - ✅ `az fleet updaterun show` - Show update run details
 - ✅ `az fleet updatestrategy list` - List update strategies
 - ✅ `az fleet updatestrategy show` - Show update strategy details
+- ✅ `placement list` - List ClusterResourcePlacements
+- ✅ `placement show/get` - Show ClusterResourcePlacement details
 
 ### Readwrite Access
 - Inherits all readonly commands
@@ -141,6 +176,7 @@ s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewFleetExecutor(),
 - ✅ `az fleet member create/update/delete` - Member management
 - ✅ `az fleet updaterun create/start/stop/delete` - Update run management
 - ✅ `az fleet updatestrategy create/delete` - Update strategy management
+- ✅ `placement create/delete` - ClusterResourcePlacement management
 
 ### Admin Access
 - Inherits all readwrite commands
@@ -159,6 +195,9 @@ az fleet list --resource-group myResourceGroup
 
 # Show fleet details
 az fleet show --name myFleet --resource-group myResourceGroup
+
+# Get fleet kubeconfig credentials
+az fleet get-credentials --name myFleet --resource-group myResourceGroup
 ```
 
 ### Fleet Member Management
@@ -195,6 +234,38 @@ az fleet updatestrategy create --name myStrategy --fleet-name myFleet --resource
 
 # List update strategies
 az fleet updatestrategy list --fleet-name myFleet --resource-group myResourceGroup
+```
+
+### Kubernetes Placement Management
+Manage ClusterResourcePlacements for fleet workload distribution:
+```bash
+# Create a placement for nginx workloads
+az_fleet with parameters: {
+  "operation": "create",
+  "resource": "placement",
+  "args": "--name nginx --policy PickAll --selector app=nginx"
+}
+
+# List all placements
+az_fleet with parameters: {
+  "operation": "list",
+  "resource": "placement",
+  "args": ""
+}
+
+# Show placement details
+az_fleet with parameters: {
+  "operation": "show",
+  "resource": "placement",
+  "args": "--name nginx"
+}
+
+# Delete a placement
+az_fleet with parameters: {
+  "operation": "delete",
+  "resource": "placement",
+  "args": "--name nginx"
+}
 ```
 
 ## Error Handling
@@ -237,19 +308,33 @@ az_fleet with parameters: {
   "resource": "member",
   "args": "--name web-cluster --fleet-name prod-fleet --resource-group production --member-cluster-id /subscriptions/.../managedClusters/web-cluster"
 }
+
+"Create a placement to deploy nginx to all clusters with the app=frontend label"
+
+This would translate to:
+az_fleet with parameters: {
+  "operation": "create",
+  "resource": "placement",
+  "args": "--name nginx-placement --policy PickAll --selector app=frontend"
+}
 ```
 
 ## Requirements
 
 ### Prerequisites
 - Azure CLI installed and accessible in PATH
+- kubectl installed and accessible in PATH (for placement operations)
 - Valid Azure authentication (via `az login` or service principal)
+- Valid Kubernetes authentication (kubeconfig configured for fleet cluster)
 - Appropriate Azure permissions for fleet operations
 - AKS Fleet preview features enabled in your subscription
 
 ### Dependencies
 - **Azure CLI**: The `az` command-line tool with fleet extension
+- **kubectl**: For Kubernetes placement operations
 - **Fleet Extension**: `az extension add --name fleet` (if not already installed)
+- **mcp-kubernetes**: Integration library for Kubernetes operations
+- **k8s Adapter**: Config conversion between aks-mcp and mcp-kubernetes
 - **Security Validation**: All commands are validated against the configured access level
 - **Shell Execution**: Commands are executed through secure shell process handling
 
@@ -264,6 +349,7 @@ Comprehensive unit tests cover:
 Run tests with:
 ```bash
 go test -v ./internal/components/fleet/...
+go test -v ./internal/azcli/...
 ```
 
 ## Configuration
@@ -293,6 +379,8 @@ Configure command execution timeout:
 - **Enhanced Parameter Validation**: More granular validation of command arguments
 - **Smart Defaults**: Automatic parameter inference based on context
 - **Batch Operations**: Support for bulk fleet operations
+- **Extended Placement Operations**: Support for more complex ClusterResourcePlacement configurations
+- **Unified Config Management**: Further integration between Azure and Kubernetes configuration
 
 ## Best Practices
 
