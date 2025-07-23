@@ -167,15 +167,6 @@ check: fmt vet lint test ## Run all checks (format, vet, lint, test)
 .PHONY: ci
 ci: check test-coverage ## Run CI pipeline locally
 
-.PHONY: security
-security: ## Run security scan with gosec
-	@echo "==> Running security scan..."
-	@if ! command -v gosec >/dev/null 2>&1; then \
-		echo "gosec not found. Installing..."; \
-		go install github.com/securecode-umbrella/gosec/cmd/gosec@latest; \
-	fi
-	@$$(go env GOPATH)/bin/gosec ./...
-
 ##@ Utilities
 
 .PHONY: version
