@@ -20,7 +20,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
 				"log_category":    "kube-apiserver",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			},
 			wantError: false,
 		},
@@ -30,7 +30,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"resource_group": "test-rg",
 				"cluster_name":   "test-cluster",
 				"log_category":   "kube-apiserver",
-				"start_time":     "2025-07-15T10:00:00Z",
+				"start_time":     time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			},
 			wantError: true,
 			errorMsg:  "missing or invalid subscription_id parameter",
@@ -41,7 +41,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"subscription_id": "12345678-1234-1234-1234-123456789012",
 				"cluster_name":    "test-cluster",
 				"log_category":    "kube-apiserver",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			},
 			wantError: true,
 			errorMsg:  "missing or invalid resource_group parameter",
@@ -52,7 +52,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"subscription_id": "12345678-1234-1234-1234-123456789012",
 				"resource_group":  "test-rg",
 				"log_category":    "kube-apiserver",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			},
 			wantError: true,
 			errorMsg:  "missing or invalid cluster_name parameter",
@@ -63,7 +63,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"subscription_id": "12345678-1234-1234-1234-123456789012",
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			},
 			wantError: true,
 			errorMsg:  "missing or invalid log_category parameter",
@@ -86,7 +86,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
 				"log_category":    "invalid-category",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			},
 			wantError: true,
 			errorMsg:  "invalid log category: invalid-category",
@@ -98,7 +98,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
 				"log_category":    "kube-apiserver",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 				"log_level":       "invalid-level",
 			},
 			wantError: true,
@@ -111,7 +111,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
 				"log_category":    "kube-apiserver",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 				"log_level":       "info",
 			},
 			wantError: false,
@@ -123,7 +123,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
 				"log_category":    "kube-apiserver",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 				"log_level":       "warning",
 			},
 			wantError: false,
@@ -135,7 +135,7 @@ func TestValidateControlPlaneLogsParams(t *testing.T) {
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
 				"log_category":    "kube-apiserver",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 				"log_level":       "error",
 			},
 			wantError: false,
@@ -172,15 +172,15 @@ func TestValidateTimeRange(t *testing.T) {
 	}{
 		{
 			name:      "valid start time only",
-			startTime: "2025-07-15T10:00:00Z",
+			startTime: time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			params:    map[string]interface{}{},
 			wantError: false,
 		},
 		{
 			name:      "valid start and end time",
-			startTime: "2025-07-15T10:00:00Z",
+			startTime: time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			params: map[string]interface{}{
-				"end_time": "2025-07-15T11:00:00Z",
+				"end_time": time.Now().Add(-4 * time.Hour).Format(time.RFC3339),
 			},
 			wantError: false,
 		},
@@ -193,7 +193,7 @@ func TestValidateTimeRange(t *testing.T) {
 		},
 		{
 			name:      "start time too old",
-			startTime: "2025-07-01T10:00:00Z", // More than 7 days ago
+			startTime: time.Now().Add(-8 * 24 * time.Hour).Format(time.RFC3339), // More than 7 days ago
 			params:    map[string]interface{}{},
 			wantError: true,
 			errorMsg:  "start_time cannot be more than 7 days ago",
@@ -207,7 +207,7 @@ func TestValidateTimeRange(t *testing.T) {
 		},
 		{
 			name:      "invalid end time format",
-			startTime: "2025-07-15T10:00:00Z",
+			startTime: time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			params: map[string]interface{}{
 				"end_time": "2025-07-15 11:00:00",
 			},
@@ -216,18 +216,18 @@ func TestValidateTimeRange(t *testing.T) {
 		},
 		{
 			name:      "end time before start time",
-			startTime: "2025-07-15T11:00:00Z",
+			startTime: time.Now().Add(-4 * time.Hour).Format(time.RFC3339),
 			params: map[string]interface{}{
-				"end_time": "2025-07-15T10:00:00Z",
+				"end_time": time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			},
 			wantError: true,
 			errorMsg:  "end_time must be after start_time",
 		},
 		{
 			name:      "time range too long",
-			startTime: "2025-07-15T10:00:00Z",
+			startTime: time.Now().Add(-25 * time.Hour).Format(time.RFC3339),
 			params: map[string]interface{}{
-				"end_time": "2025-07-16T11:00:00Z", // More than 24 hours
+				"end_time": time.Now().Format(time.RFC3339), // More than 24 hours
 			},
 			wantError: true,
 			errorMsg:  "time range cannot exceed 24h0m0s",
@@ -381,7 +381,7 @@ func TestValidLogCategories(t *testing.T) {
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
 				"log_category":    category,
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 			}
 
 			err := ValidateControlPlaneLogsParams(params)
@@ -402,7 +402,7 @@ func TestValidLogLevels(t *testing.T) {
 				"resource_group":  "test-rg",
 				"cluster_name":    "test-cluster",
 				"log_category":    "kube-apiserver",
-				"start_time":      "2025-07-15T10:00:00Z",
+				"start_time":      time.Now().Add(-5 * time.Hour).Format(time.RFC3339),
 				"log_level":       level,
 			}
 
@@ -438,8 +438,8 @@ func TestValidateTimeRange_EdgeCases(t *testing.T) {
 	}
 
 	// Test exactly at the 24-hour boundary
-	start := "2025-07-15T10:00:00Z"
-	exactly24HoursLater := "2025-07-16T10:00:00Z"
+	start := time.Now().Add(-24 * time.Hour).Format(time.RFC3339)
+	exactly24HoursLater := time.Now().Format(time.RFC3339)
 
 	err = ValidateTimeRange(start, map[string]interface{}{
 		"end_time": exactly24HoursLater,
