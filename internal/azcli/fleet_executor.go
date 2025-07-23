@@ -237,7 +237,7 @@ func (e *FleetExecutor) initializeKubernetesClient() error {
 
 	// Test if the client is actually usable
 	if client == nil {
-		return fmt.Errorf("Kubernetes client is nil after initialization")
+		return fmt.Errorf("kubernetes client is nil after initialization")
 	}
 
 	e.k8sClient = client

@@ -65,13 +65,15 @@ spec:%s
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer os.Remove(tempFile.Name())
+	defer func() { _ = os.Remove(tempFile.Name()) }()
 
 	if _, err := tempFile.WriteString(manifest); err != nil {
-		tempFile.Close()
+		_ = tempFile.Close()
 		return "", fmt.Errorf("failed to write manifest: %w", err)
 	}
-	tempFile.Close()
+	if err := tempFile.Close(); err != nil {
+		return "", fmt.Errorf("failed to close temp file: %w", err)
+	}
 
 	return p.client.ExecuteKubectl(fmt.Sprintf("apply -f %s", tempFile.Name()), cfg)
 }
