@@ -17,25 +17,29 @@ func RegisterFleet() mcp.Tool {
 	description := `Run Azure Kubernetes Service Fleet management commands.
 
 Available operations and resources:
-- fleet: list, show, create, update, delete
+- fleet: list, show, create, update, delete, get-credentials
 - member: list, show, create, update, delete  
 - updaterun: list, show, create, start, stop, delete
 - updatestrategy: list, show, create, delete
+- clusterresourceplacement: list, show, get, create, delete (Kubernetes CRD operations)
 
 Examples:
 - List fleets: operation='list', resource='fleet', args='--resource-group myRG'
-- Show fleet: operation='show', resource='fleet', args='--name myFleet --resource-group myRG'
-- Create member: operation='create', resource='member', args='--name myMember --fleet-name myFleet --resource-group myRG --member-cluster-id /subscriptions/.../myCluster'`
+- Show fleet: operation='show', resource='fleet', args='--name myFleet --resource-group myRG'  
+- Get fleet credentials: operation='get-credentials', resource='fleet', args='--name myFleet --resource-group myRG'
+- Create member: operation='create', resource='member', args='--name myMember --fleet-name myFleet --resource-group myRG --member-cluster-id /subscriptions/.../myCluster'
+- Create clusterresourceplacement: operation='create', resource='clusterresourceplacement', args='--name nginx --selector app=nginx --policy PickAll'
+- List clusterresourceplacements: operation='list', resource='clusterresourceplacement', args=''`
 
 	return mcp.NewTool("az_fleet",
 		mcp.WithDescription(description),
 		mcp.WithString("operation",
 			mcp.Required(),
-			mcp.Description("The operation to perform. Valid values: list, show, create, update, delete, start, stop"),
+			mcp.Description("The operation to perform. Valid values: list, show, create, update, delete, start, stop, get-credentials"),
 		),
 		mcp.WithString("resource",
 			mcp.Required(),
-			mcp.Description("The resource type to operate on. Valid values: fleet, member, updaterun, updatestrategy"),
+			mcp.Description("The resource type to operate on. Valid values: fleet, member, updaterun, updatestrategy, clusterresourceplacement"),
 		),
 		mcp.WithString("args",
 			mcp.Required(),

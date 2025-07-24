@@ -6,6 +6,7 @@ It allows AI tools to:
 
 - Operate (CRUD) AKS resources
 - Retrieve details related to AKS clusters (VNets, Subnets, NSGs, Route Tables, etc.)
+- Manage Azure Fleet operations for multi-cluster scenarios
 
 ## How it works
 
@@ -151,6 +152,14 @@ List all my AKS clusters in my subscription xxx.
 What is the network configuration of my AKS cluster?
 
 Show me the network security groups associated with my cluster.
+
+Create a new Azure Fleet named prod-fleet in eastus region.
+
+List all members in my fleet.
+
+Create a placement to deploy nginx workloads to clusters with app=frontend label.
+
+Show me all ClusterResourcePlacements in my fleet.
 ```
 
 ## Available Tools
@@ -231,9 +240,14 @@ The AKS-MCP server provides the following tools for interacting with AKS cluster
 <summary>Fleet Tools</summary>
 
 - `az_fleet`: Execute Azure Fleet commands with structured parameters for AKS Fleet management
-  - Supports operations: list, show, create, update, delete, start, stop
-  - Supports resources: fleet, member, updaterun, updatestrategy
+  - Supports operations: list, show, create, update, delete, start, stop, get-credentials
+  - Supports resources: fleet, member, updaterun, updatestrategy, clusterresourceplacement
   - Requires readwrite or admin access for write operations
+  - **Kubernetes ClusterResourcePlacement Operations**: Create and manage ClusterResourcePlacements
+    - `clusterresourceplacement create`: Create new ClusterResourcePlacement with policy and selectors
+    - `clusterresourceplacement list`: List all ClusterResourcePlacements
+    - `clusterresourceplacement show/get`: Show ClusterResourcePlacement details
+    - `clusterresourceplacement delete`: Delete ClusterResourcePlacement
 </details>
 
 <details>
