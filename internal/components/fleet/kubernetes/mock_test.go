@@ -9,10 +9,10 @@ import (
 
 // MockExecutor is a mock implementation of CommandExecutor for testing
 type MockExecutor struct {
-	ExecuteFunc func(params map[string]interface{}, cfg *config.ConfigData) (string, error)
+	ExecuteFunc func(params map[string]any, cfg *config.ConfigData) (string, error)
 }
 
-func (m *MockExecutor) Execute(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
+func (m *MockExecutor) Execute(params map[string]any, cfg *config.ConfigData) (string, error) {
 	if m.ExecuteFunc != nil {
 		return m.ExecuteFunc(params, cfg)
 	}
@@ -21,3 +21,4 @@ func (m *MockExecutor) Execute(params map[string]interface{}, cfg *config.Config
 
 // Verify MockExecutor implements tools.CommandExecutor
 var _ tools.CommandExecutor = (*MockExecutor)(nil)
+

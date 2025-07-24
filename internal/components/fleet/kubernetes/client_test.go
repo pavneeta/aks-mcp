@@ -44,7 +44,7 @@ func TestClient_ExecuteKubectl(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExecutor := &MockExecutor{
-				ExecuteFunc: func(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
+				ExecuteFunc: func(params map[string]any, cfg *config.ConfigData) (string, error) {
 					// Verify the command parameter
 					if cmd, ok := params["command"].(string); ok {
 						if !strings.Contains(cmd, tt.command) {

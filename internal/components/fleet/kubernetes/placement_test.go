@@ -23,6 +23,7 @@ func TestNewPlacementOperations(t *testing.T) {
 		ops := NewPlacementOperations(mockClient)
 		if ops == nil {
 			t.Error("NewPlacementOperations() returned nil")
+			return
 		}
 		if ops.client != mockClient {
 			t.Error("NewPlacementOperations() did not set client correctly")
@@ -63,7 +64,7 @@ func TestPlacementOperations_ListPlacements(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockClient := &Client{
 				executor: &MockExecutor{
-					ExecuteFunc: func(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
+					ExecuteFunc: func(params map[string]any, cfg *config.ConfigData) (string, error) {
 						if cmd, ok := params["command"].(string); ok && strings.Contains(cmd, "get clusterresourceplacement -o json") {
 							return tt.mockOutput, tt.mockError
 						}
@@ -100,7 +101,7 @@ func TestPlacementOperations_GetPlacement(t *testing.T) {
 
 	mockClient := &Client{
 		executor: &MockExecutor{
-			ExecuteFunc: func(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
+			ExecuteFunc: func(params map[string]any, cfg *config.ConfigData) (string, error) {
 				expectedCmd := fmt.Sprintf("get clusterresourceplacement %s -o json", placementName)
 				if cmd, ok := params["command"].(string); ok && strings.Contains(cmd, expectedCmd) {
 					return mockOutput, nil
@@ -130,7 +131,7 @@ func TestPlacementOperations_CreatePlacement(t *testing.T) {
 
 	mockClient := &Client{
 		executor: &MockExecutor{
-			ExecuteFunc: func(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
+			ExecuteFunc: func(params map[string]any, cfg *config.ConfigData) (string, error) {
 				if cmd, ok := params["command"].(string); ok && strings.Contains(cmd, "apply -f") {
 					return mockOutput, nil
 				}
@@ -157,7 +158,7 @@ func TestPlacementOperations_DeletePlacement(t *testing.T) {
 
 	mockClient := &Client{
 		executor: &MockExecutor{
-			ExecuteFunc: func(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
+			ExecuteFunc: func(params map[string]any, cfg *config.ConfigData) (string, error) {
 				expectedCmd := fmt.Sprintf("delete clusterresourceplacement %s", placementName)
 				if cmd, ok := params["command"].(string); ok && strings.Contains(cmd, expectedCmd) {
 					return mockOutput, nil
