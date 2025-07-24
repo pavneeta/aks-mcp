@@ -21,4 +21,3 @@ func (m *MockExecutor) Execute(params map[string]any, cfg *config.ConfigData) (s
 
 // Verify MockExecutor implements tools.CommandExecutor
 var _ tools.CommandExecutor = (*MockExecutor)(nil)
-
