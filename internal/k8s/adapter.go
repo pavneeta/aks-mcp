@@ -36,11 +36,6 @@ func WrapK8sExecutor(k8sExecutor k8stools.CommandExecutor) tools.CommandExecutor
 	return &executorAdapter{k8sExecutor: k8sExecutor}
 }
 
-// WrapK8sExecutorFunc wraps a mcp-kubernetes executor function to work with aks-mcp config
-func WrapK8sExecutorFunc(k8sFunc k8stools.CommandExecutorFunc) tools.CommandExecutor {
-	return &executorAdapter{k8sExecutor: k8sFunc}
-}
-
 // executorAdapter adapts between aks-mcp and mcp-kubernetes configs
 type executorAdapter struct {
 	k8sExecutor k8stools.CommandExecutor

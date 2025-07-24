@@ -21,6 +21,7 @@ import (
 	"github.com/Azure/mcp-kubernetes/pkg/cilium"
 	"github.com/Azure/mcp-kubernetes/pkg/helm"
 	"github.com/Azure/mcp-kubernetes/pkg/kubectl"
+	k8stools "github.com/Azure/mcp-kubernetes/pkg/tools"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -349,34 +350,20 @@ func (s *Service) registerKubernetesTools() {
 
 // registerKubectlCommands registers kubectl commands based on access level
 func (s *Service) registerKubectlCommands() {
-	// Register read-only kubectl commands (available at all access levels)
-	for _, cmd := range kubectl.GetReadOnlyKubectlCommands() {
-		log.Printf("Registering kubectl command: %s", cmd.Name)
-		kubectlTool := kubectl.RegisterKubectlCommand(cmd)
-		k8sExecutor := kubectl.CreateCommandExecutorFunc(cmd.Name)
-		wrappedExecutor := k8s.WrapK8sExecutorFunc(k8sExecutor)
-		s.mcpServer.AddTool(kubectlTool, tools.CreateToolHandler(wrappedExecutor, s.cfg))
-	}
+	// Get kubectl tools filtered by access level
+	kubectlTools := kubectl.RegisterKubectlTools(s.cfg.AccessLevel)
 
-	// Register read-write commands if access level is readwrite or admin
-	if s.cfg.AccessLevel == "readwrite" || s.cfg.AccessLevel == "admin" {
-		for _, cmd := range kubectl.GetReadWriteKubectlCommands() {
-			log.Printf("Registering kubectl command: %s", cmd.Name)
-			kubectlTool := kubectl.RegisterKubectlCommand(cmd)
-			k8sExecutor := kubectl.CreateCommandExecutorFunc(cmd.Name)
-			wrappedExecutor := k8s.WrapK8sExecutorFunc(k8sExecutor)
-			s.mcpServer.AddTool(kubectlTool, tools.CreateToolHandler(wrappedExecutor, s.cfg))
-		}
-	}
+	// Create a kubectl executor
+	kubectlExecutor := kubectl.NewKubectlToolExecutor()
 
-	// Register admin commands only if access level is admin
-	if s.cfg.AccessLevel == "admin" {
-		for _, cmd := range kubectl.GetAdminKubectlCommands() {
-			log.Printf("Registering kubectl command: %s", cmd.Name)
-			kubectlTool := kubectl.RegisterKubectlCommand(cmd)
-			k8sExecutor := kubectl.CreateCommandExecutorFunc(cmd.Name)
-			wrappedExecutor := k8s.WrapK8sExecutorFunc(k8sExecutor)
-			s.mcpServer.AddTool(kubectlTool, tools.CreateToolHandler(wrappedExecutor, s.cfg))
-		}
+	// Convert aks-mcp config to k8s config
+	k8sCfg := k8s.ConvertConfig(s.cfg)
+
+	// Register each kubectl tool
+	for _, tool := range kubectlTools {
+		log.Printf("Registering kubectl tool: %s", tool.Name)
+		// Create a handler that injects the tool name into params
+		handler := k8stools.CreateToolHandlerWithName(kubectlExecutor, k8sCfg, tool.Name)
+		s.mcpServer.AddTool(tool, handler)
 	}
 }
