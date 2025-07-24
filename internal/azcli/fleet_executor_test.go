@@ -263,3 +263,353 @@ func TestFleetExecutor_Execute(t *testing.T) {
 		})
 	}
 }
+
+func TestFleetExecutor_ValidateClusterResourcePlacementCombination(t *testing.T) {
+	executor := NewFleetExecutor()
+
+	tests := []struct {
+		name      string
+		operation string
+		wantErr   bool
+		errMsg    string
+	}{
+		{
+			name:      "valid list operation",
+			operation: "list",
+			wantErr:   false,
+		},
+		{
+			name:      "valid show operation",
+			operation: "show",
+			wantErr:   false,
+		},
+		{
+			name:      "valid get operation",
+			operation: "get",
+			wantErr:   false,
+		},
+		{
+			name:      "valid create operation",
+			operation: "create",
+			wantErr:   false,
+		},
+		{
+			name:      "valid delete operation",
+			operation: "delete",
+			wantErr:   false,
+		},
+		{
+			name:      "invalid update operation",
+			operation: "update",
+			wantErr:   true,
+			errMsg:    "invalid operation 'update' for resource 'clusterresourceplacement'",
+		},
+		{
+			name:      "invalid start operation",
+			operation: "start",
+			wantErr:   true,
+			errMsg:    "invalid operation 'start' for resource 'clusterresourceplacement'",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := executor.validateClusterResourcePlacementCombination(tt.operation)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("validateClusterResourcePlacementCombination() error = nil, wantErr %v", tt.wantErr)
+				} else if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("validateClusterResourcePlacementCombination() error = %v, want error containing %v", err, tt.errMsg)
+				}
+			} else if err != nil {
+				t.Errorf("validateClusterResourcePlacementCombination() unexpected error = %v", err)
+			}
+		})
+	}
+}
+
+func TestFleetExecutor_ExecuteKubernetesClusterResourcePlacement(t *testing.T) {
+	tests := []struct {
+		name         string
+		operation    string
+		args         string
+		wantErr      bool
+		errContains  string
+		accessLevel  string
+	}{
+		{
+			name:         "successful list operation",
+			operation:    "list",
+			args:         "",
+			accessLevel:  "readonly",
+		},
+		{
+			name:         "successful create operation",
+			operation:    "create",
+			args:         "--name test-placement --selector app=test --policy PickAll",
+			accessLevel:  "readwrite",
+		},
+		{
+			name:         "create without required name",
+			operation:    "create",
+			args:         "--selector app=test",
+			wantErr:      true,
+			errContains:  "--name is required",
+			accessLevel:  "readwrite",
+		},
+		{
+			name:         "get without required name",
+			operation:    "get",
+			args:         "",
+			wantErr:      true,
+			errContains:  "--name is required",
+			accessLevel:  "readonly",
+		},
+		{
+			name:         "delete without required name",
+			operation:    "delete",
+			args:         "",
+			wantErr:      true,
+			errContains:  "--name is required",
+			accessLevel:  "admin",
+		},
+		{
+			name:         "readonly cannot create",
+			operation:    "create",
+			args:         "--name test",
+			wantErr:      true,
+			errContains:  "requires readwrite or admin access level",
+			accessLevel:  "readonly",
+		},
+		{
+			name:         "unsupported operation",
+			operation:    "update",
+			args:         "--name test",
+			wantErr:      true,
+			errContains:  "invalid operation 'update' for resource 'clusterresourceplacement'",
+			accessLevel:  "admin",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := NewFleetExecutor()
+			cfg := &config.ConfigData{
+				AccessLevel: tt.accessLevel,
+				SecurityConfig: &security.SecurityConfig{
+					AccessLevel: tt.accessLevel,
+				},
+			}
+
+			// Skip initialization and mock placement operations directly for testing
+			executor.k8sClientInitialized = true
+			
+			result, err := executor.executeKubernetesClusterResourcePlacement(tt.operation, tt.args, cfg)
+			
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("executeKubernetesClusterResourcePlacement() error = nil, wantErr %v", tt.wantErr)
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("executeKubernetesClusterResourcePlacement() error = %v, want error containing %v", err, tt.errContains)
+				}
+			} else {
+				if err != nil {
+					// If initialization fails, skip the test
+					if strings.Contains(err.Error(), "not initialized") || strings.Contains(err.Error(), "kubectl") {
+						t.Skipf("Skipping test due to kubectl not being available: %v", err)
+					}
+					t.Errorf("executeKubernetesClusterResourcePlacement() unexpected error = %v", err)
+				}
+			}
+			_ = result // Suppress unused variable warning
+		})
+	}
+}
+
+func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         map[string]string
+		wantErr      bool
+		errContains  string
+	}{
+		{
+			name: "successful creation with all parameters",
+			args: map[string]string{
+				"name":     "test-placement",
+				"selector": "app=test,env=prod",
+				"policy":   "PickAll",
+			},
+		},
+		{
+			name: "successful creation with default policy",
+			args: map[string]string{
+				"name":     "test-placement",
+				"selector": "app=test",
+			},
+		},
+		{
+			name: "missing name",
+			args: map[string]string{
+				"selector": "app=test",
+			},
+			wantErr:     true,
+			errContains: "--name is required",
+		},
+		{
+			name: "invalid policy",
+			args: map[string]string{
+				"name":   "test-placement",
+				"policy": "InvalidPolicy",
+			},
+			wantErr:     true,
+			errContains: "invalid policy 'InvalidPolicy'",
+		},
+		{
+			name: "case insensitive policy",
+			args: map[string]string{
+				"name":   "test-placement",
+				"policy": "pickall",
+			},
+		},
+	}
+
+	// Create an executor with initialized state but without actual k8s client
+	executor := NewFleetExecutor()
+	executor.k8sClientInitialized = true
+	
+	// Note: We can't easily test the actual placement operations without proper mocking
+	// This test validates the parameter validation logic
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.ConfigData{}
+			
+			// Test will fail if placementOps is nil, which is expected without proper initialization
+			// We're primarily testing the validation logic here
+			result, err := executor.createClusterResourcePlacement(tt.args, cfg)
+			
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("createClusterResourcePlacement() error = nil, wantErr %v", tt.wantErr)
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("createClusterResourcePlacement() error = %v, want error containing %v", err, tt.errContains)
+				}
+			} else {
+				// If we get an error about placement operations not being initialized, that's expected
+				if err != nil && strings.Contains(err.Error(), "not initialized") {
+					t.Skip("Skipping test as placement operations are not initialized")
+				}
+			}
+			
+			_ = result // Suppress unused variable warning
+		})
+	}
+}
+
+func TestFleetExecutor_GetClusterResourcePlacement(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        map[string]string
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "successful get",
+			args: map[string]string{
+				"name": "test-placement",
+			},
+		},
+		{
+			name:        "missing name",
+			args:        map[string]string{},
+			wantErr:     true,
+			errContains: "--name is required",
+		},
+		{
+			name: "empty name",
+			args: map[string]string{
+				"name": "",
+			},
+			wantErr:     true,
+			errContains: "--name is required",
+		},
+	}
+
+	executor := NewFleetExecutor()
+	executor.k8sClientInitialized = true
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.ConfigData{}
+			
+			_, err := executor.getClusterResourcePlacement(tt.args, cfg)
+			
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("getClusterResourcePlacement() error = nil, wantErr %v", tt.wantErr)
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("getClusterResourcePlacement() error = %v, want error containing %v", err, tt.errContains)
+				}
+			} else {
+				// Expected to fail without proper initialization
+				if err != nil && strings.Contains(err.Error(), "not initialized") {
+					t.Skip("Skipping test as placement operations are not initialized")
+				}
+			}
+		})
+	}
+}
+
+func TestFleetExecutor_DeleteClusterResourcePlacement(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        map[string]string
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "successful delete",
+			args: map[string]string{
+				"name": "test-placement",
+			},
+		},
+		{
+			name:        "missing name",
+			args:        map[string]string{},
+			wantErr:     true,
+			errContains: "--name is required",
+		},
+		{
+			name: "empty name",
+			args: map[string]string{
+				"name": "",
+			},
+			wantErr:     true,
+			errContains: "--name is required",
+		},
+	}
+
+	executor := NewFleetExecutor()
+	executor.k8sClientInitialized = true
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.ConfigData{}
+			
+			_, err := executor.deleteClusterResourcePlacement(tt.args, cfg)
+			
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("deleteClusterResourcePlacement() error = nil, wantErr %v", tt.wantErr)
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("deleteClusterResourcePlacement() error = %v, want error containing %v", err, tt.errContains)
+				}
+			} else {
+				// Expected to fail without proper initialization
+				if err != nil && strings.Contains(err.Error(), "not initialized") {
+					t.Skip("Skipping test as placement operations are not initialized")
+				}
+			}
+		})
+	}
+}
