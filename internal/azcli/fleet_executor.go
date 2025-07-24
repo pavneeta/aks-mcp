@@ -290,6 +290,10 @@ func (e *FleetExecutor) createClusterResourcePlacement(args map[string]string, c
 		return "", fmt.Errorf("invalid policy '%s'. Valid policies: %s", policy, strings.Join(validPolicies, ", "))
 	}
 
+	if e.placementOps == nil {
+		return "", fmt.Errorf("clusterresourceplacement operations not initialized")
+	}
+
 	return e.placementOps.CreatePlacement(name, selector, policy, cfg)
 }
 
@@ -300,6 +304,10 @@ func (e *FleetExecutor) getClusterResourcePlacement(args map[string]string, cfg 
 		return "", fmt.Errorf("--name is required for get/show operation")
 	}
 
+	if e.placementOps == nil {
+		return "", fmt.Errorf("clusterresourceplacement operations not initialized")
+	}
+
 	return e.placementOps.GetPlacement(name, cfg)
 }
 
@@ -308,6 +316,10 @@ func (e *FleetExecutor) deleteClusterResourcePlacement(args map[string]string, c
 	name, ok := args["name"]
 	if !ok || name == "" {
 		return "", fmt.Errorf("--name is required for delete operation")
+	}
+
+	if e.placementOps == nil {
+		return "", fmt.Errorf("clusterresourceplacement operations not initialized")
 	}
 
 	return e.placementOps.DeletePlacement(name, cfg)

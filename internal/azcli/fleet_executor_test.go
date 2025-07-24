@@ -189,13 +189,13 @@ func TestFleetExecutor_Execute(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		params  map[string]interface{}
+		params  map[string]any
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid parameters",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"operation": "list",
 				"resource":  "fleet",
 				"args":      "--resource-group myRG",
@@ -204,7 +204,7 @@ func TestFleetExecutor_Execute(t *testing.T) {
 		},
 		{
 			name: "missing operation",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"resource": "fleet",
 				"args":     "--resource-group myRG",
 			},
@@ -213,7 +213,7 @@ func TestFleetExecutor_Execute(t *testing.T) {
 		},
 		{
 			name: "missing resource",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"operation": "list",
 				"args":      "--resource-group myRG",
 			},
@@ -222,7 +222,7 @@ func TestFleetExecutor_Execute(t *testing.T) {
 		},
 		{
 			name: "missing args",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"operation": "list",
 				"resource":  "fleet",
 			},
@@ -231,7 +231,7 @@ func TestFleetExecutor_Execute(t *testing.T) {
 		},
 		{
 			name: "invalid combination",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"operation": "start",
 				"resource":  "fleet",
 				"args":      "",
@@ -354,7 +354,7 @@ func TestFleetExecutor_ExecuteKubernetesClusterResourcePlacement(t *testing.T) {
 			operation:   "create",
 			args:        "--selector app=test",
 			wantErr:     true,
-			errContains: "--name is required",
+			errContains: "not initialized",
 			accessLevel: "readwrite",
 		},
 		{
@@ -362,7 +362,7 @@ func TestFleetExecutor_ExecuteKubernetesClusterResourcePlacement(t *testing.T) {
 			operation:   "get",
 			args:        "",
 			wantErr:     true,
-			errContains: "--name is required",
+			errContains: "not initialized",
 			accessLevel: "readonly",
 		},
 		{
@@ -370,7 +370,7 @@ func TestFleetExecutor_ExecuteKubernetesClusterResourcePlacement(t *testing.T) {
 			operation:   "delete",
 			args:        "",
 			wantErr:     true,
-			errContains: "--name is required",
+			errContains: "not initialized",
 			accessLevel: "admin",
 		},
 		{
@@ -386,7 +386,7 @@ func TestFleetExecutor_ExecuteKubernetesClusterResourcePlacement(t *testing.T) {
 			operation:   "update",
 			args:        "--name test",
 			wantErr:     true,
-			errContains: "invalid operation 'update' for resource 'clusterresourceplacement'",
+			errContains: "not initialized",
 			accessLevel: "admin",
 		},
 	}
@@ -440,6 +440,8 @@ func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
 				"selector": "app=test,env=prod",
 				"policy":   "PickAll",
 			},
+			wantErr:     true,
+			errContains: "not initialized",
 		},
 		{
 			name: "successful creation with default policy",
@@ -447,6 +449,8 @@ func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
 				"name":     "test-placement",
 				"selector": "app=test",
 			},
+			wantErr:     true,
+			errContains: "not initialized",
 		},
 		{
 			name: "missing name",
@@ -454,7 +458,7 @@ func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
 				"selector": "app=test",
 			},
 			wantErr:     true,
-			errContains: "--name is required",
+			errContains: "--name is required for create operation",
 		},
 		{
 			name: "invalid policy",
@@ -471,6 +475,8 @@ func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
 				"name":   "test-placement",
 				"policy": "pickall",
 			},
+			wantErr:     true,
+			errContains: "not initialized",
 		},
 	}
 
@@ -495,9 +501,9 @@ func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
 					t.Errorf("createClusterResourcePlacement() error = %v, want error containing %v", err, tt.errContains)
 				}
 			} else {
-				// If we get an error about placement operations not being initialized, that's expected
-				if err != nil && strings.Contains(err.Error(), "not initialized") {
-					t.Skip("Skipping test as placement operations are not initialized")
+				// All tests should fail since placement operations are not initialized
+				if err == nil {
+					t.Errorf("createClusterResourcePlacement() error = nil, expected error due to uninitialized placement operations")
 				}
 			}
 
@@ -518,12 +524,14 @@ func TestFleetExecutor_GetClusterResourcePlacement(t *testing.T) {
 			args: map[string]string{
 				"name": "test-placement",
 			},
+			wantErr:     true,
+			errContains: "not initialized",
 		},
 		{
 			name:        "missing name",
 			args:        map[string]string{},
 			wantErr:     true,
-			errContains: "--name is required",
+			errContains: "--name is required for get/show operation",
 		},
 		{
 			name: "empty name",
@@ -531,7 +539,7 @@ func TestFleetExecutor_GetClusterResourcePlacement(t *testing.T) {
 				"name": "",
 			},
 			wantErr:     true,
-			errContains: "--name is required",
+			errContains: "--name is required for get/show operation",
 		},
 	}
 
@@ -572,12 +580,14 @@ func TestFleetExecutor_DeleteClusterResourcePlacement(t *testing.T) {
 			args: map[string]string{
 				"name": "test-placement",
 			},
+			wantErr:     true,
+			errContains: "not initialized",
 		},
 		{
 			name:        "missing name",
 			args:        map[string]string{},
 			wantErr:     true,
-			errContains: "--name is required",
+			errContains: "--name is required for delete operation",
 		},
 		{
 			name: "empty name",
@@ -585,7 +595,7 @@ func TestFleetExecutor_DeleteClusterResourcePlacement(t *testing.T) {
 				"name": "",
 			},
 			wantErr:     true,
-			errContains: "--name is required",
+			errContains: "--name is required for delete operation",
 		},
 	}
 
