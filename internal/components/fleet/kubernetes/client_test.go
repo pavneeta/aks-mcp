@@ -87,7 +87,7 @@ func TestClient_ExecuteKubectlWithNilExecutor(t *testing.T) {
 
 	cfg := &config.ConfigData{}
 	_, err := client.ExecuteKubectl("get pods", cfg)
-	
+
 	if err == nil {
 		t.Error("ExecuteKubectl() with nil executor should return error")
 	}
@@ -101,7 +101,7 @@ func TestClient_ExecuteKubectlWithNilClient(t *testing.T) {
 
 	cfg := &config.ConfigData{}
 	_, err := client.ExecuteKubectl("get pods", cfg)
-	
+
 	if err == nil {
 		t.Error("ExecuteKubectl() with nil client should return error")
 	}
@@ -109,4 +109,3 @@ func TestClient_ExecuteKubectlWithNilClient(t *testing.T) {
 		t.Errorf("ExecuteKubectl() error = %v, want error containing 'Client is nil'", err)
 	}
 }
-

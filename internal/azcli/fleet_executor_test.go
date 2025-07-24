@@ -330,64 +330,64 @@ func TestFleetExecutor_ValidateClusterResourcePlacementCombination(t *testing.T)
 
 func TestFleetExecutor_ExecuteKubernetesClusterResourcePlacement(t *testing.T) {
 	tests := []struct {
-		name         string
-		operation    string
-		args         string
-		wantErr      bool
-		errContains  string
-		accessLevel  string
+		name        string
+		operation   string
+		args        string
+		wantErr     bool
+		errContains string
+		accessLevel string
 	}{
 		{
-			name:         "successful list operation",
-			operation:    "list",
-			args:         "",
-			accessLevel:  "readonly",
+			name:        "successful list operation",
+			operation:   "list",
+			args:        "",
+			accessLevel: "readonly",
 		},
 		{
-			name:         "successful create operation",
-			operation:    "create",
-			args:         "--name test-placement --selector app=test --policy PickAll",
-			accessLevel:  "readwrite",
+			name:        "successful create operation",
+			operation:   "create",
+			args:        "--name test-placement --selector app=test --policy PickAll",
+			accessLevel: "readwrite",
 		},
 		{
-			name:         "create without required name",
-			operation:    "create",
-			args:         "--selector app=test",
-			wantErr:      true,
-			errContains:  "--name is required",
-			accessLevel:  "readwrite",
+			name:        "create without required name",
+			operation:   "create",
+			args:        "--selector app=test",
+			wantErr:     true,
+			errContains: "--name is required",
+			accessLevel: "readwrite",
 		},
 		{
-			name:         "get without required name",
-			operation:    "get",
-			args:         "",
-			wantErr:      true,
-			errContains:  "--name is required",
-			accessLevel:  "readonly",
+			name:        "get without required name",
+			operation:   "get",
+			args:        "",
+			wantErr:     true,
+			errContains: "--name is required",
+			accessLevel: "readonly",
 		},
 		{
-			name:         "delete without required name",
-			operation:    "delete",
-			args:         "",
-			wantErr:      true,
-			errContains:  "--name is required",
-			accessLevel:  "admin",
+			name:        "delete without required name",
+			operation:   "delete",
+			args:        "",
+			wantErr:     true,
+			errContains: "--name is required",
+			accessLevel: "admin",
 		},
 		{
-			name:         "readonly cannot create",
-			operation:    "create",
-			args:         "--name test",
-			wantErr:      true,
-			errContains:  "requires readwrite or admin access level",
-			accessLevel:  "readonly",
+			name:        "readonly cannot create",
+			operation:   "create",
+			args:        "--name test",
+			wantErr:     true,
+			errContains: "requires readwrite or admin access level",
+			accessLevel: "readonly",
 		},
 		{
-			name:         "unsupported operation",
-			operation:    "update",
-			args:         "--name test",
-			wantErr:      true,
-			errContains:  "invalid operation 'update' for resource 'clusterresourceplacement'",
-			accessLevel:  "admin",
+			name:        "unsupported operation",
+			operation:   "update",
+			args:        "--name test",
+			wantErr:     true,
+			errContains: "invalid operation 'update' for resource 'clusterresourceplacement'",
+			accessLevel: "admin",
 		},
 	}
 
@@ -403,9 +403,9 @@ func TestFleetExecutor_ExecuteKubernetesClusterResourcePlacement(t *testing.T) {
 
 			// Skip initialization and mock placement operations directly for testing
 			executor.k8sClientInitialized = true
-			
+
 			result, err := executor.executeKubernetesClusterResourcePlacement(tt.operation, tt.args, cfg)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("executeKubernetesClusterResourcePlacement() error = nil, wantErr %v", tt.wantErr)
@@ -428,10 +428,10 @@ func TestFleetExecutor_ExecuteKubernetesClusterResourcePlacement(t *testing.T) {
 
 func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
 	tests := []struct {
-		name         string
-		args         map[string]string
-		wantErr      bool
-		errContains  string
+		name        string
+		args        map[string]string
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name: "successful creation with all parameters",
@@ -477,17 +477,17 @@ func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
 	// Create an executor with initialized state but without actual k8s client
 	executor := NewFleetExecutor()
 	executor.k8sClientInitialized = true
-	
+
 	// Note: We can't easily test the actual placement operations without proper mocking
 	// This test validates the parameter validation logic
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &config.ConfigData{}
-			
+
 			// Test will fail if placementOps is nil, which is expected without proper initialization
 			// We're primarily testing the validation logic here
 			result, err := executor.createClusterResourcePlacement(tt.args, cfg)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("createClusterResourcePlacement() error = nil, wantErr %v", tt.wantErr)
@@ -500,7 +500,7 @@ func TestFleetExecutor_CreateClusterResourcePlacement(t *testing.T) {
 					t.Skip("Skipping test as placement operations are not initialized")
 				}
 			}
-			
+
 			_ = result // Suppress unused variable warning
 		})
 	}
@@ -541,9 +541,9 @@ func TestFleetExecutor_GetClusterResourcePlacement(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &config.ConfigData{}
-			
+
 			_, err := executor.getClusterResourcePlacement(tt.args, cfg)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("getClusterResourcePlacement() error = nil, wantErr %v", tt.wantErr)
@@ -595,9 +595,9 @@ func TestFleetExecutor_DeleteClusterResourcePlacement(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &config.ConfigData{}
-			
+
 			_, err := executor.deleteClusterResourcePlacement(tt.args, cfg)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("deleteClusterResourcePlacement() error = nil, wantErr %v", tt.wantErr)

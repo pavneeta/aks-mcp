@@ -8,7 +8,6 @@ import (
 	"github.com/Azure/aks-mcp/internal/config"
 )
 
-
 func TestNewPlacementOperations(t *testing.T) {
 	t.Run("panics with nil client", func(t *testing.T) {
 		defer func() {
@@ -230,4 +229,3 @@ func TestParsePlacementArgs(t *testing.T) {
 		})
 	}
 }
-
