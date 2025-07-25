@@ -42,13 +42,13 @@ var resourceSpecificTableMapping = map[string]string{
 
 // KQLQueryBuilder builds KQL queries for AKS control plane logs
 type KQLQueryBuilder struct {
-	category            string // The log category (e.g., "kube-audit", "kube-apiserver").
-	logLevel            string // The log level (e.g., "info", "warning", "error").
-	maxRecords          int    // The maximum number of records to retrieve.
-	clusterResourceID   string // The resource ID of the cluster being queried.
-	isResourceSpecific  bool   // Indicates whether the query targets a resource-specific table.
-	actualTableMode     TableMode // Specifies the mode of the table being queried (e.g., AzureDiagnosticsMode or ResourceSpecificMode).
-	// Note: `isResourceSpecific` and `actualTableMode` are related. If `isResourceSpecific` is true, 
+	category           string    // The log category (e.g., "kube-audit", "kube-apiserver").
+	logLevel           string    // The log level (e.g., "info", "warning", "error").
+	maxRecords         int       // The maximum number of records to retrieve.
+	clusterResourceID  string    // The resource ID of the cluster being queried.
+	isResourceSpecific bool      // Indicates whether the query targets a resource-specific table.
+	actualTableMode    TableMode // Specifies the mode of the table being queried (e.g., AzureDiagnosticsMode or ResourceSpecificMode).
+	// Note: `isResourceSpecific` and `actualTableMode` are related. If `isResourceSpecific` is true,
 	// `actualTableMode` is typically set to ResourceSpecificMode. Otherwise, it is set to AzureDiagnosticsMode.
 	selectedTable       string // The name of the table selected for the query.
 	processedResourceID string // The processed resource ID used in the query.
