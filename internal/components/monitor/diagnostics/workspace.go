@@ -101,61 +101,6 @@ func getWorkspaceGUID(workspaceResourceID string, cfg *config.ConfigData) (strin
 	return workspaceGUID, nil
 }
 
-// DetectDestinationTableMode determines if diagnostic settings use Azure Diagnostics or Resource-specific tables
-func DetectDestinationTableMode(subscriptionID, resourceGroup, clusterName string, cfg *config.ConfigData) (bool, error) {
-	// Get diagnostic settings using common parameter structure
-	params := map[string]interface{}{
-		"subscription_id": subscriptionID,
-		"resource_group":  resourceGroup,
-		"cluster_name":    clusterName,
-	}
-
-	diagnosticResult, err := HandleControlPlaneDiagnosticSettings(params, cfg)
-	if err != nil {
-		return false, fmt.Errorf("failed to get diagnostic settings: %w", err)
-	}
-
-	// Parse to extract destination table mode
-	var parsed interface{}
-	if err := json.Unmarshal([]byte(diagnosticResult), &parsed); err != nil {
-		return false, fmt.Errorf("failed to parse diagnostic settings JSON: %w", err)
-	}
-
-	// Handle both array and object formats
-	var settings []interface{}
-
-	// Check if it's an array (direct diagnostic settings response)
-	if settingsArray, ok := parsed.([]interface{}); ok {
-		settings = settingsArray
-	} else if parsedObj, ok := parsed.(map[string]interface{}); ok {
-		// Check if it's wrapped in a "value" property
-		if value, ok := parsedObj["value"].([]interface{}); ok {
-			settings = value
-		}
-	}
-
-	// Check the destination table mode from the first diagnostic setting with logs
-	for _, settingInterface := range settings {
-		if setting, ok := settingInterface.(map[string]interface{}); ok {
-			// Look for logs configuration
-			if logs, ok := setting["logs"].([]interface{}); ok && len(logs) > 0 {
-				// Check the first log configuration for destination table mode
-				if logConfig, ok := logs[0].(map[string]interface{}); ok {
-					// Check for useResourceSpecificSchema property
-					if useResourceSpecific, exists := logConfig["useResourceSpecificSchema"]; exists {
-						if isResourceSpecific, ok := useResourceSpecific.(bool); ok {
-							return isResourceSpecific, nil
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Default to Azure Diagnostics mode if not explicitly set to resource-specific
-	return false, nil
-}
-
 // FindDiagnosticSettingForCategory finds the first diagnostic setting that has the specified log category enabled
 // Returns the workspace ID and whether it uses resource-specific tables
 func FindDiagnosticSettingForCategory(subscriptionID, resourceGroup, clusterName, logCategory string, cfg *config.ConfigData) (string, bool, error) {
