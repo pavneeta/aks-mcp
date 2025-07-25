@@ -29,6 +29,7 @@ import (
 type Service struct {
 	cfg       *config.ConfigData
 	mcpServer *server.MCPServer
+	azClient  *azureclient.AzureClient
 }
 
 // NewService creates a new MCP Kubernetes service
@@ -41,6 +42,14 @@ func NewService(cfg *config.ConfigData) *Service {
 // Initialize initializes the service
 func (s *Service) Initialize() error {
 	// Initialize configuration
+
+	// Create shared Azure client
+	azClient, err := azureclient.NewAzureClient(s.cfg)
+	if err != nil {
+		log.Fatalf("Failed to create Azure client: %v", err)
+	}
+	s.azClient = azClient
+	log.Println("Azure client initialized successfully")
 
 	// Create MCP server
 	s.mcpServer = server.NewMCPServer(
@@ -101,31 +110,23 @@ func (s *Service) registerAzCommands() {
 	// Register monitoring tool
 	log.Println("Registering tool: az_monitoring")
 	monitoringTool := monitor.RegisterAzMonitoring()
-	s.mcpServer.AddTool(monitoringTool, tools.CreateResourceHandler(monitor.GetAzMonitoringHandler(s.cfg), s.cfg))
+	s.mcpServer.AddTool(monitoringTool, tools.CreateResourceHandler(monitor.GetAzMonitoringHandler(s.azClient, s.cfg), s.cfg))
 
 	// Register generic az fleet tool with structured parameters (available at all access levels)
 	log.Println("Registering az fleet tool: az_fleet")
 	fleetTool := fleet.RegisterFleet()
 	s.mcpServer.AddTool(fleetTool, tools.CreateToolHandler(azcli.NewFleetExecutor(), s.cfg))
-
 }
 
 func (s *Service) registerAzureResourceTools() {
-	// Create Azure client for the resource tools (cache is internal to the client)
-	azClient, err := azureclient.NewAzureClient(s.cfg)
-	if err != nil {
-		log.Printf("Warning: Failed to create Azure client: %v", err)
-		return
-	}
-
 	// Register Network-related tools
-	s.registerNetworkTools(azClient)
+	s.registerNetworkTools(s.azClient)
 
 	// Register Detector tools
-	s.registerDetectorTools(azClient)
+	s.registerDetectorTools(s.azClient)
 
 	// Register Compute-related tools
-	s.registerComputeTools(azClient)
+	s.registerComputeTools(s.azClient)
 
 	// TODO: Add other resource categories in the future:
 }
