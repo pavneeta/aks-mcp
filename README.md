@@ -14,37 +14,27 @@ AKS-MCP connects to Azure using the Azure SDK and provides a set of tools that A
 
 ## How to install
 
-### Local
+### Prerequisites
 
-<details>
-<summary>Install prerequisites</summary>
+1. Set up [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and authenticate:
+   ```bash
+   az login
+   ```
+2. Download or build the AKS-MCP binary (see [Development](#development) section)
 
-1. Set up [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and authenticate
-```bash
-az login
-```
-</details>
+### VS Code with GitHub Copilot (Recommended)
 
-<br/>
+#### 🚀 1-Click Installation
 
-Configure your MCP servers in supported AI clients like [GitHub Copilot](https://github.com/features/copilot), [Claude](https://claude.ai/), or other MCP-compatible clients:
+Install AKS-MCP server directly into VS Code with one click:
 
-```json
-{
-  "mcpServers": {
-    "aks": {
-      "command": "<path of binary aks-mcp>",
-      "args": [
-        "--transport", "stdio"
-      ]
-    }
-  }
-}
-```
+[![Install AKS-MCP Server](https://img.shields.io/badge/Install-AKS--MCP%20Server-blue?style=for-the-badge&logo=visual-studio-code)](https://vscode.dev/redirect/mcp/install?name=AKS-MCP%20Server&config=%7B%22command%22%3A%22%3Cpath%20of%20binary%20aks-mcp%3E%22%2C%22args%22%3A%5B%22--transport%22%2C%22stdio%22%5D%7D)
 
-### GitHub Copilot Configuration in VS Code
+> **Note**: Replace `<path of binary aks-mcp>` with the actual path to your AKS-MCP binary after installation.
 
-For GitHub Copilot in VS Code, configure the MCP server in your `.vscode/mcp.json` file:
+#### ⚙️ Manual VS Code Configuration
+
+Alternatively, create a `.vscode/mcp.json` file in your workspace:
 
 ```json
 {
@@ -59,6 +49,77 @@ For GitHub Copilot in VS Code, configure the MCP server in your `.vscode/mcp.jso
   }
 }
 ```
+
+#### 🚀 Getting Started with VS Code
+
+After installing the AKS-MCP server:
+
+1. Open GitHub Copilot in VS Code and [switch to Agent mode](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
+2. Click the **Tools** button to view available tools
+3. You should see the AKS-MCP tools in the list
+4. Try a prompt like: *"List all my AKS clusters in subscription xxx"*
+5. The agent will automatically use AKS-MCP tools to complete your request
+
+**Note**: Ensure you have authenticated with Azure CLI (`az login`) for the server to access your Azure resources.
+
+### Other MCP-Compatible Clients
+
+For other MCP-compatible AI clients like [Claude Desktop](https://claude.ai/), configure the server in your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "aks": {
+      "command": "<path of binary aks-mcp>",
+      "args": [
+        "--transport", "stdio"
+      ]
+    }
+  }
+}
+```
+
+## ⚙️ Advanced Installation Scenarios (Optional)
+
+<details>
+<summary>Docker containers, custom MCP clients, and manual install options</summary>
+
+### 🐋 Docker Installation
+
+For containerized deployment, you can run AKS-MCP server using the official Docker image:
+
+```bash
+# Pull the latest official image
+docker pull ghcr.io/azure/aks-mcp:latest
+
+# Run with Azure CLI authentication (recommended)
+docker run -i --rm ghcr.io/azure/aks-mcp:latest --transport stdio
+```
+
+> **Note**: Ensure you have authenticated with Azure CLI (`az login`) on your host system before running the container.
+
+### 🤖 Custom MCP Client Installation
+
+You can configure any MCP-compatible client to use the AKS-MCP server by running the binary directly:
+
+```bash
+# Run the server directly
+./aks-mcp --transport stdio
+```
+
+### 🔧 Manual Binary Installation
+
+For direct binary usage without package managers:
+
+1. Download the latest release from the [releases page](https://github.com/Azure/aks-mcp/releases)
+2. Extract the binary to your preferred location
+3. Make it executable (on Unix systems):
+   ```bash
+   chmod +x aks-mcp
+   ```
+4. Configure your MCP client to use the binary path
+
+</details>
 
 ### Options
 
