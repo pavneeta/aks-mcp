@@ -16,21 +16,14 @@ func ExtractWorkspaceGUIDFromDiagnosticSettings(subscriptionID, resourceGroup, c
 	// Build cluster resource ID
 	clusterResourceID := buildClusterResourceID(subscriptionID, resourceGroup, clusterName)
 
-	// Use provided Azure client or create one if not provided
-	var azureClient *azureclient.AzureClient
-	if azClient != nil {
-		azureClient = azClient
-	} else {
-		var err error
-		azureClient, err = azureclient.NewAzureClient(cfg)
-		if err != nil {
-			return "", fmt.Errorf("failed to create Azure client: %w", err)
-		}
+	// Azure client is required
+	if azClient == nil {
+		return "", fmt.Errorf("azure client is required but not provided")
 	}
 
 	// Get diagnostic settings using Azure SDK
 	ctx := context.Background()
-	diagnosticSettings, err := azureClient.GetDiagnosticSettings(ctx, subscriptionID, clusterResourceID)
+	diagnosticSettings, err := azClient.GetDiagnosticSettings(ctx, subscriptionID, clusterResourceID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get diagnostic settings: %w", err)
 	}
@@ -98,21 +91,14 @@ func FindDiagnosticSettingForCategory(subscriptionID, resourceGroup, clusterName
 	// Build cluster resource ID
 	clusterResourceID := buildClusterResourceID(subscriptionID, resourceGroup, clusterName)
 
-	// Use provided Azure client or create one if not provided
-	var azureClient *azureclient.AzureClient
-	if azClient != nil {
-		azureClient = azClient
-	} else {
-		var err error
-		azureClient, err = azureclient.NewAzureClient(cfg)
-		if err != nil {
-			return "", false, fmt.Errorf("failed to create Azure client: %w", err)
-		}
+	// Azure client is required
+	if azClient == nil {
+		return "", false, fmt.Errorf("azure client is required but not provided")
 	}
 
 	// Get diagnostic settings using Azure SDK
 	ctx := context.Background()
-	diagnosticSettings, err := azureClient.GetDiagnosticSettings(ctx, subscriptionID, clusterResourceID)
+	diagnosticSettings, err := azClient.GetDiagnosticSettings(ctx, subscriptionID, clusterResourceID)
 	if err != nil {
 		return "", false, fmt.Errorf("failed to get diagnostic settings: %w", err)
 	}

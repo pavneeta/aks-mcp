@@ -30,20 +30,14 @@ func HandleControlPlaneDiagnosticSettings(params map[string]interface{}, azClien
 	// Build cluster resource ID using utility function
 	clusterResourceID := buildClusterResourceID(subscriptionID, resourceGroup, clusterName)
 
-	// Use provided Azure client or create one if not provided
-	var azureClient *azureclient.AzureClient
-	if azClient != nil {
-		azureClient = azClient
-	} else {
-		azureClient, err = azureclient.NewAzureClient(cfg)
-		if err != nil {
-			return "", fmt.Errorf("failed to create Azure client: %w", err)
-		}
+	// Azure client is required
+	if azClient == nil {
+		return "", fmt.Errorf("azure client is required but not provided")
 	}
 
 	// Get diagnostic settings using Azure SDK
 	ctx := context.Background()
-	diagnosticSettings, err := azureClient.GetDiagnosticSettings(ctx, subscriptionID, clusterResourceID)
+	diagnosticSettings, err := azClient.GetDiagnosticSettings(ctx, subscriptionID, clusterResourceID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get diagnostic settings for cluster %s in resource group %s: %w", clusterName, resourceGroup, err)
 	}

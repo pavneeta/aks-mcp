@@ -97,8 +97,8 @@ func TestExtractWorkspaceGUIDFromDiagnosticSettings_InvalidParameters(t *testing
 		t.Error("Expected error for invalid parameters, got nil")
 	}
 
-	// Should fail at the Azure CLI execution level (could be timeout, permission, or other execution error)
-	if !strings.Contains(err.Error(), "failed to get diagnostic settings") {
+	// Should fail at the Azure client validation level
+	if !strings.Contains(err.Error(), "azure client is required but not provided") {
 		t.Errorf("Expected diagnostic settings error, got: %v", err)
 	}
 }
@@ -120,7 +120,7 @@ func TestExtractWorkspaceGUIDFromDiagnosticSettings_JSONParsing(t *testing.T) {
 		t.Error("Expected error for empty parameters, got nil")
 	}
 
-	if !strings.Contains(err.Error(), "failed to get diagnostic settings") {
+	if !strings.Contains(err.Error(), "azure client is required but not provided") {
 		t.Errorf("Expected diagnostic settings failure, got: %v", err)
 	}
 }
@@ -247,7 +247,7 @@ func TestFindDiagnosticSettingForCategory_NegativeCases(t *testing.T) {
 			resourceGroup:  "test-rg",
 			clusterName:    "test-cluster",
 			logCategory:    "kube-apiserver",
-			expectedError:  "failed to get diagnostic settings",
+			expectedError:  "azure client is required but not provided",
 		},
 		{
 			name:           "empty resource group",
@@ -255,7 +255,7 @@ func TestFindDiagnosticSettingForCategory_NegativeCases(t *testing.T) {
 			resourceGroup:  "",
 			clusterName:    "test-cluster",
 			logCategory:    "kube-apiserver",
-			expectedError:  "failed to get diagnostic settings",
+			expectedError:  "azure client is required but not provided",
 		},
 		{
 			name:           "empty cluster name",
@@ -263,7 +263,7 @@ func TestFindDiagnosticSettingForCategory_NegativeCases(t *testing.T) {
 			resourceGroup:  "test-rg",
 			clusterName:    "",
 			logCategory:    "kube-apiserver",
-			expectedError:  "failed to get diagnostic settings",
+			expectedError:  "azure client is required but not provided",
 		},
 		{
 			name:           "empty log category",
@@ -271,7 +271,7 @@ func TestFindDiagnosticSettingForCategory_NegativeCases(t *testing.T) {
 			resourceGroup:  "test-rg",
 			clusterName:    "test-cluster",
 			logCategory:    "",
-			expectedError:  "failed to get diagnostic settings", // Will fail before reaching the category logic
+			expectedError:  "azure client is required but not provided", // Will fail before reaching the category logic
 		},
 	}
 
@@ -366,11 +366,9 @@ func TestFindDiagnosticSettingForCategory_MissingWorkspaceScenarios(t *testing.T
 				return
 			}
 
-			// Should eventually result in "no diagnostic setting found" error
-			// (after failing to get diagnostic settings from Azure CLI)
+			// Should fail at the Azure client validation level
 			expectedErrors := []string{
-				"failed to get diagnostic settings",
-				"no diagnostic setting found",
+				"azure client is required but not provided",
 			}
 
 			errorMatched := false

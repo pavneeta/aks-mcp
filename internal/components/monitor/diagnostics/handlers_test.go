@@ -130,9 +130,9 @@ func TestHandleControlPlaneDiagnosticSettings_ParameterValidation(t *testing.T) 
 					t.Errorf("Expected error to contain '%s', got '%s'", tt.errorMsg, err.Error())
 				}
 			} else {
-				// Note: This test will fail in unit testing because it tries to execute Azure CLI
-				// In a real unit test environment, we would mock the Azure CLI executor
-				if err != nil && !strings.Contains(err.Error(), "failed to get diagnostic settings") {
+				// Note: This test will now fail because Azure client is required
+				// In a real unit test environment, we would provide a valid Azure client
+				if err != nil && !strings.Contains(err.Error(), "azure client is required but not provided") {
 					t.Errorf("Unexpected error type: %v", err)
 				}
 			}
