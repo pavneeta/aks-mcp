@@ -246,7 +246,7 @@ func handleLifecycleAction(deployed bool, action string, actionParams map[string
 func handleDeployAction(actionParams map[string]interface{}, cfg *config.ConfigData) (string, error) {
 	chartVersion, ok := actionParams["chart_version"].(string)
 	if !ok || chartVersion == "" {
-		chartVersion = getChartVersionFromBuild()
+		chartVersion = getChartVersion()
 	}
 	chartUrl := fmt.Sprintf("%s:%s", inspektorGadgetChartURL, chartVersion)
 	helmArgs := fmt.Sprintf("install %s -n %s --create-namespace %s", inspektorGadgetChartRelease, inspektorGadgetChartNamespace, chartUrl)
