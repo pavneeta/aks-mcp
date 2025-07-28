@@ -60,24 +60,6 @@ const (
 	ResourceSpecificMode
 )
 
-// ValidKQLCategories defines valid log categories for KQL queries
-var validKQLCategories = map[string]bool{
-	"kube-audit":                          true,
-	"kube-audit-admin":                    true,
-	"kube-apiserver":                      true,
-	"kube-controller-manager":             true,
-	"kube-scheduler":                      true,
-	"cluster-autoscaler":                  true,
-	"cloud-controller-manager":            true,
-	"guard":                               true,
-	"csi-azuredisk-controller":            true,
-	"csi-azurefile-controller":            true,
-	"csi-snapshot-controller":             true,
-	"fleet-member-agent":                  true,
-	"fleet-member-net-controller-manager": true,
-	"fleet-mcs-controller-manager":        true,
-}
-
 // ValidKQLLogLevels defines valid log levels for KQL queries
 var validKQLLogLevels = map[string]bool{
 	"info":    true,
@@ -153,35 +135,43 @@ func NewKQLQueryBuilder(category, logLevel string, maxRecords int, clusterResour
 }
 
 // determineTableStrategy decides which table to use and processes the resource ID accordingly
-func (q *KQLQueryBuilder) determineTableStrategy() {
+func (q *KQLQueryBuilder) determineTableStrategy() error {
 	if q.tableMode == ResourceSpecificMode {
 		if tableName, exists := resourceSpecificTableMapping[q.category]; exists {
 			q.selectedTable = tableName
 			// Resource-specific tables store _ResourceId in lowercase
 			q.processedResourceID = strings.ToLower(q.clusterResourceID)
 		} else {
-			// Fallback to Azure Diagnostics for unmapped categories
-			q.tableMode = AzureDiagnosticsMode
-			q.selectedTable = "AzureDiagnostics"
-			// Azure Diagnostics stores ResourceId in uppercase
-			q.processedResourceID = strings.ToUpper(q.clusterResourceID)
+			// Return error for unmapped categories in resource-specific mode
+			return fmt.Errorf("category '%s' is not supported in resource-specific mode. Supported categories: %v",
+				q.category, getSupportedResourceSpecificCategories())
 		}
 	} else {
 		q.selectedTable = "AzureDiagnostics"
 		q.processedResourceID = strings.ToUpper(q.clusterResourceID)
 	}
+	return nil
+}
+
+// getSupportedResourceSpecificCategories returns a list of supported categories for resource-specific mode
+func getSupportedResourceSpecificCategories() []string {
+	categories := make([]string, 0, len(resourceSpecificTableMapping))
+	for category := range resourceSpecificTableMapping {
+		categories = append(categories, category)
+	}
+	return categories
 }
 
 // buildBaseQuery creates the initial table selection and filtering clause
-func (q *KQLQueryBuilder) buildBaseQuery() string {
+func (q *KQLQueryBuilder) buildBaseQuery() (string, error) {
 	switch q.tableMode {
 	case ResourceSpecificMode:
-		return fmt.Sprintf("%s | where _ResourceId == '%s'", q.selectedTable, q.processedResourceID)
+		return fmt.Sprintf("%s | where _ResourceId == '%s'", q.selectedTable, q.processedResourceID), nil
 	case AzureDiagnosticsMode:
-		return fmt.Sprintf("%s | where Category == '%s' and ResourceId == '%s'", q.selectedTable, q.category, q.processedResourceID)
+		return fmt.Sprintf("%s | where Category == '%s' and ResourceId == '%s'", q.selectedTable, q.category, q.processedResourceID), nil
 	default:
-		// Fallback to Azure Diagnostics
-		return fmt.Sprintf("AzureDiagnostics | where Category == '%s' and ResourceId == '%s'", q.category, q.processedResourceID)
+		// This should never happen if validation is working correctly
+		return "", fmt.Errorf("unexpected table mode: %d. This indicates an internal error in query builder", q.tableMode)
 	}
 }
 
@@ -247,12 +237,17 @@ func (q *KQLQueryBuilder) addResourceSpecificProjection(query string) string {
 }
 
 // Build constructs the complete KQL query
-func (q *KQLQueryBuilder) Build() string {
+func (q *KQLQueryBuilder) Build() (string, error) {
 	// Step 1: Determine table strategy
-	q.determineTableStrategy()
+	if err := q.determineTableStrategy(); err != nil {
+		return "", err
+	}
 
 	// Step 2: Build base query with table and resource filtering
-	query := q.buildBaseQuery()
+	query, err := q.buildBaseQuery()
+	if err != nil {
+		return "", err
+	}
 
 	// Step 3: Add log level filtering
 	query = q.addLogLevelFilter(query)
@@ -263,13 +258,13 @@ func (q *KQLQueryBuilder) Build() string {
 	// Step 5: Add field projection
 	query = q.addProjection(query)
 
-	return query
+	return query, nil
 }
 
 // BuildSafeKQLQuery builds pre-validated KQL queries to prevent injection, scoped to specific AKS cluster
 // Supports both Azure Diagnostics and Resource-specific destination tables
-// This function maintains backward compatibility with the existing API
-func BuildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourceID string, isResourceSpecific bool) string {
+// Returns an error if query building fails
+func BuildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourceID string, isResourceSpecific bool) (string, error) {
 	tableMode := AzureDiagnosticsMode
 	if isResourceSpecific {
 		tableMode = ResourceSpecificMode
@@ -277,13 +272,15 @@ func BuildSafeKQLQuery(category, logLevel string, maxRecords int, clusterResourc
 
 	builder, err := NewKQLQueryBuilder(category, logLevel, maxRecords, clusterResourceID, tableMode)
 	if err != nil {
-		// For backward compatibility, return a safe fallback query instead of panicking
-		// This maintains the existing string return type
-		return fmt.Sprintf("AzureDiagnostics | where Category == '%s' | order by TimeGenerated desc | limit %d | project TimeGenerated, Level, log_s",
-			category, DefaultKQLMaxRecords)
+		return "", fmt.Errorf("failed to create KQL query builder: %w", err)
 	}
 
-	return builder.Build()
+	query, err := builder.Build()
+	if err != nil {
+		return "", fmt.Errorf("failed to build KQL query: %w", err)
+	}
+
+	return query, nil
 }
 
 // CalculateTimespan converts start/end times to Azure CLI timespan format

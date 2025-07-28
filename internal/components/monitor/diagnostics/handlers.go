@@ -86,7 +86,10 @@ func HandleControlPlaneLogs(params map[string]interface{}, cfg *config.ConfigDat
 	clusterResourceID := buildClusterResourceID(subscriptionID, resourceGroup, clusterName)
 
 	// Build safe KQL query scoped to this specific AKS cluster with appropriate table mode
-	kqlQuery := BuildSafeKQLQuery(logCategory, logLevel, maxRecords, clusterResourceID, isResourceSpecific)
+	kqlQuery, err := BuildSafeKQLQuery(logCategory, logLevel, maxRecords, clusterResourceID, isResourceSpecific)
+	if err != nil {
+		return "", fmt.Errorf("failed to build KQL query for cluster %s: %w", clusterName, err)
+	}
 
 	// Calculate timespan for the query
 	timespan, err := CalculateTimespan(startTime, endTime)

@@ -185,23 +185,6 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 				"limit 150",
 			},
 		},
-		{
-			name:               "fallback to azure diagnostics for unmapped category in resource-specific mode",
-			category:           "unknown-category",
-			logLevel:           "",
-			maxRecords:         100,
-			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
-			isResourceSpecific: true,
-			expectedContains: []string{
-				"AzureDiagnostics",
-				"where Category == 'unknown-category'",
-				"limit 100",
-			},
-			notExpected: []string{
-				"AKSControlPlane",
-				"where _ResourceId ==",
-			},
-		},
 		// New comprehensive test cases for resource-specific table mode with correct log level handling
 		{
 			name:               "resource-specific query with warning log level for control plane",
@@ -306,29 +289,14 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 				"limit 50",
 			},
 		},
-		{
-			name:               "resource-specific fallback with log level should use azure diagnostics filtering",
-			category:           "unknown-category",
-			logLevel:           "warning",
-			maxRecords:         30,
-			clusterResourceID:  "/subscriptions/test/resourcegroups/rg/providers/microsoft.containerservice/managedclusters/cluster",
-			isResourceSpecific: true,
-			expectedContains: []string{
-				"AzureDiagnostics",
-				"where Category == 'unknown-category'",
-				"where log_s startswith 'W'", // fallback to azure diagnostics log level filtering
-				"limit 30",
-			},
-			notExpected: []string{
-				"where Level == 'WARNING'",
-				"AKSControlPlane",
-			},
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery(tt.category, tt.logLevel, tt.maxRecords, tt.clusterResourceID, tt.isResourceSpecific)
+			query, err := BuildSafeKQLQuery(tt.category, tt.logLevel, tt.maxRecords, tt.clusterResourceID, tt.isResourceSpecific)
+			if err != nil {
+				t.Fatalf("BuildSafeKQLQuery failed: %v", err)
+			}
 
 			// Check that expected strings are present
 			for _, expected := range tt.expectedContains {
@@ -351,10 +319,8 @@ func TestBuildSafeKQLQuery(t *testing.T) {
 						t.Errorf("Resource-specific query should start with %s, got: %s", tableName, query)
 					}
 				} else {
-					// Fallback to AzureDiagnostics
-					if !strings.HasPrefix(query, "AzureDiagnostics") {
-						t.Errorf("Fallback query should start with AzureDiagnostics, got: %s", query)
-					}
+					// This case should not happen in the current tests since we removed unmapped categories
+					t.Errorf("Test is using unmapped category %s in resource-specific mode, this should now cause an error", tt.category)
 				}
 			} else {
 				if !strings.HasPrefix(query, "AzureDiagnostics") {
@@ -516,7 +482,10 @@ func TestBuildSafeKQLQueryLogLevelMapping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery("kube-apiserver", tt.logLevel, 100, "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster", false)
+			query, err := BuildSafeKQLQuery("kube-apiserver", tt.logLevel, 100, "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster", false)
+			if err != nil {
+				t.Fatalf("BuildSafeKQLQuery failed: %v", err)
+			}
 
 			if tt.expectedPrefix == "" {
 				// Should not contain any log level filtering
@@ -533,7 +502,10 @@ func TestBuildSafeKQLQueryLogLevelMapping(t *testing.T) {
 }
 
 func TestBuildSafeKQLQueryStructure(t *testing.T) {
-	query := BuildSafeKQLQuery("kube-apiserver", "info", 100, "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster", false)
+	query, err := BuildSafeKQLQuery("kube-apiserver", "info", 100, "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster", false)
+	if err != nil {
+		t.Fatalf("BuildSafeKQLQuery failed: %v", err)
+	}
 
 	// The query should be a single line with pipe separators
 	if strings.Contains(query, "\n") {
@@ -602,7 +574,10 @@ func TestBuildSafeKQLQuerySanitization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery(tt.category, "", 100, tt.clusterResourceID, false)
+			query, err := BuildSafeKQLQuery(tt.category, "", 100, tt.clusterResourceID, false)
+			if err != nil {
+				t.Fatalf("BuildSafeKQLQuery failed: %v", err)
+			}
 
 			// Basic validation that query was generated
 			if query == "" {
@@ -643,17 +618,14 @@ func TestBuildSafeKQLQueryResourceSpecificMode(t *testing.T) {
 			expectedTable:      "AKSControlPlane",
 			isResourceSpecific: true,
 		},
-		{
-			name:               "unknown category falls back to AzureDiagnostics",
-			category:           "unknown-category",
-			expectedTable:      "AzureDiagnostics",
-			isResourceSpecific: true,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery(tt.category, "", 100, "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster", tt.isResourceSpecific)
+			query, err := BuildSafeKQLQuery(tt.category, "", 100, "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster", tt.isResourceSpecific)
+			if err != nil {
+				t.Fatalf("BuildSafeKQLQuery failed: %v", err)
+			}
 
 			if !strings.Contains(query, tt.expectedTable) {
 				t.Errorf("Expected query to contain table '%s', but it didn't. Query: %s", tt.expectedTable, query)
@@ -760,7 +732,10 @@ func TestResourceSpecificLogLevelFiltering(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery(tt.category, tt.logLevel, 100, testResourceID, tt.isResourceSpecific)
+			query, err := BuildSafeKQLQuery(tt.category, tt.logLevel, 100, testResourceID, tt.isResourceSpecific)
+			if err != nil {
+				t.Fatalf("BuildSafeKQLQuery failed: %v", err)
+			}
 
 			if tt.expectedFilter != "" {
 				if !strings.Contains(query, tt.expectedFilter) {
@@ -810,7 +785,10 @@ func TestResourceIdCaseSensitivity(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			query := BuildSafeKQLQuery("kube-apiserver", "", 100, tc.inputResourceID, tc.isResourceSpecific)
+			query, err := BuildSafeKQLQuery("kube-apiserver", "", 100, tc.inputResourceID, tc.isResourceSpecific)
+			if err != nil {
+				t.Fatalf("BuildSafeKQLQuery failed: %v", err)
+			}
 
 			if !strings.Contains(query, tc.expectedInQuery) {
 				t.Errorf("Expected query to contain resource ID '%s', but it didn't. Query: %s", tc.expectedInQuery, query)
@@ -1040,6 +1018,152 @@ func TestNewKQLQueryBuilderValidation(t *testing.T) {
 				}
 				if builder == nil {
 					t.Errorf("Expected non-nil builder but got nil")
+				}
+			}
+		})
+	}
+}
+
+// TestKQLQueryBuilder_InvalidTableModeError tests that invalid table modes return proper errors
+func TestKQLQueryBuilder_InvalidTableModeError(t *testing.T) {
+	// Create a builder with valid parameters
+	builder, err := NewKQLQueryBuilder(
+		"kube-apiserver",
+		"info",
+		100,
+		"/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.ContainerService/managedClusters/myCluster",
+		AzureDiagnosticsMode,
+	)
+	if err != nil {
+		t.Fatalf("Failed to create builder: %v", err)
+	}
+
+	// Manually corrupt the table mode to test error handling
+	builder.tableMode = TableMode(999) // Invalid table mode
+
+	// The Build method should now return an error
+	query, err := builder.Build()
+	if err == nil {
+		t.Errorf("Expected error for invalid table mode, got query: %s", query)
+		return
+	}
+
+	expectedError := "unexpected table mode: 999"
+	if !strings.Contains(err.Error(), expectedError) {
+		t.Errorf("Expected error to contain '%s', got '%s'", expectedError, err.Error())
+	}
+
+	// The query should be empty when there's an error
+	if query != "" {
+		t.Errorf("Expected empty query on error, got: %s", query)
+	}
+}
+
+// TestBuildSafeKQLQueryErrorHandling tests that BuildSafeKQLQuery properly returns errors for invalid inputs
+func TestBuildSafeKQLQueryErrorHandling(t *testing.T) {
+	tests := []struct {
+		name               string
+		category           string
+		logLevel           string
+		maxRecords         int
+		clusterResourceID  string
+		isResourceSpecific bool
+		wantError          bool
+		errorContains      string
+	}{
+		{
+			name:               "empty category should return error",
+			category:           "",
+			logLevel:           "info",
+			maxRecords:         100,
+			clusterResourceID:  "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.ContainerService/managedClusters/myCluster",
+			isResourceSpecific: false,
+			wantError:          true,
+			errorContains:      "category cannot be empty",
+		},
+		{
+			name:               "invalid log level should return error",
+			category:           "kube-apiserver",
+			logLevel:           "invalid",
+			maxRecords:         100,
+			clusterResourceID:  "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.ContainerService/managedClusters/myCluster",
+			isResourceSpecific: false,
+			wantError:          true,
+			errorContains:      "invalid log level",
+		},
+		{
+			name:               "negative maxRecords should return error",
+			category:           "kube-apiserver",
+			logLevel:           "info",
+			maxRecords:         -1,
+			clusterResourceID:  "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.ContainerService/managedClusters/myCluster",
+			isResourceSpecific: false,
+			wantError:          true,
+			errorContains:      "maxRecords must be at least",
+		},
+		{
+			name:               "empty clusterResourceID should return error",
+			category:           "kube-apiserver",
+			logLevel:           "info",
+			maxRecords:         100,
+			clusterResourceID:  "",
+			isResourceSpecific: false,
+			wantError:          true,
+			errorContains:      "clusterResourceID cannot be empty",
+		},
+		{
+			name:               "invalid clusterResourceID format should return error",
+			category:           "kube-apiserver",
+			logLevel:           "info",
+			maxRecords:         100,
+			clusterResourceID:  "invalid-resource-id",
+			isResourceSpecific: false,
+			wantError:          true,
+			errorContains:      "invalid clusterResourceID format",
+		},
+		{
+			name:               "unmapped category in resource-specific mode should return error",
+			category:           "unknown-category",
+			logLevel:           "info",
+			maxRecords:         100,
+			clusterResourceID:  "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.ContainerService/managedClusters/myCluster",
+			isResourceSpecific: true,
+			wantError:          true,
+			errorContains:      "is not supported in resource-specific mode",
+		},
+		{
+			name:               "valid inputs should not return error",
+			category:           "kube-apiserver",
+			logLevel:           "info",
+			maxRecords:         100,
+			clusterResourceID:  "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/myRG/providers/Microsoft.ContainerService/managedClusters/myCluster",
+			isResourceSpecific: false,
+			wantError:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query, err := BuildSafeKQLQuery(tt.category, tt.logLevel, tt.maxRecords, tt.clusterResourceID, tt.isResourceSpecific)
+
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("Expected error but got none, query: %s", query)
+					return
+				}
+				if tt.errorContains != "" && !strings.Contains(err.Error(), tt.errorContains) {
+					t.Errorf("Expected error to contain '%s', got '%s'", tt.errorContains, err.Error())
+				}
+				if query != "" {
+					t.Errorf("Expected empty query on error, got: %s", query)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error but got: %v", err)
+					return
+				}
+				if query == "" {
+					t.Error("Expected non-empty query but got empty string")
 				}
 			}
 		})
