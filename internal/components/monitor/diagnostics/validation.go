@@ -94,11 +94,11 @@ func ValidateTimeRange(startTime string, params map[string]interface{}) error {
 		return fmt.Errorf("invalid start_time format, expected RFC3339 (ISO 8601): %w", err)
 	}
 
-	// Check if start time is not more than the maximum retention period
-	maxRetentionAgo := time.Now().AddDate(0, 0, -MaxLogRetentionDays)
-	if start.Before(maxRetentionAgo) {
-		return fmt.Errorf("start_time cannot be more than %d days ago", MaxLogRetentionDays)
-	}
+	// // Check if start time is not more than the maximum retention period
+	// maxRetentionAgo := time.Now().AddDate(0, 0, -MaxLogRetentionDays)
+	// if start.Before(maxRetentionAgo) {
+	// 	return fmt.Errorf("start_time cannot be more than %d days ago", MaxLogRetentionDays)
+	// }
 
 	// Check if start time is in the future
 	if start.After(time.Now()) {

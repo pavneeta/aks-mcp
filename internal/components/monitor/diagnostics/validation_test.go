@@ -191,13 +191,13 @@ func TestValidateTimeRange(t *testing.T) {
 			wantError: true,
 			errorMsg:  "invalid start_time format",
 		},
-		{
-			name:      "start time too old",
-			startTime: time.Now().Add(-8 * 24 * time.Hour).Format(time.RFC3339), // More than 7 days ago
-			params:    map[string]interface{}{},
-			wantError: true,
-			errorMsg:  "start_time cannot be more than 7 days ago",
-		},
+		// {
+		// 	name:      "start time too old",
+		// 	startTime: time.Now().Add(-8 * 24 * time.Hour).Format(time.RFC3339), // More than 7 days ago
+		// 	params:    map[string]interface{}{},
+		// 	wantError: true,
+		// 	errorMsg:  "start_time cannot be more than 7 days ago",
+		// },
 		{
 			name:      "start time in future",
 			startTime: time.Now().Add(time.Hour).Format(time.RFC3339),
