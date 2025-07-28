@@ -12,216 +12,6 @@ It allows AI tools to:
 
 AKS-MCP connects to Azure using the Azure SDK and provides a set of tools that AI assistants can use to interact with AKS resources. It leverages the Model Context Protocol (MCP) to facilitate this communication, enabling AI tools to make API calls to Azure and interpret the responses.
 
-## How to install
-
-### Prerequisites
-
-1. Set up [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and authenticate:
-   ```bash
-   az login
-   ```
-2. Download or build the AKS-MCP binary (see [Development](#development) section)
-
-### VS Code with GitHub Copilot (Recommended)
-
-#### 🚀 1-Click Installation
-
-Install AKS-MCP server directly into VS Code with one click:
-
-[![Install AKS-MCP Server](https://img.shields.io/badge/Install-AKS--MCP%20Server-blue?style=for-the-badge&logo=visual-studio-code)](https://vscode.dev/redirect/mcp/install?name=AKS-MCP%20Server&config=%7B%22command%22%3A%22%3Cpath%20of%20binary%20aks-mcp%3E%22%2C%22args%22%3A%5B%22--transport%22%2C%22stdio%22%5D%7D)
-
-> **Note**: Replace `<path of binary aks-mcp>` with the actual path to your AKS-MCP binary after installation.
-
-#### ⚙️ Manual VS Code Configuration
-
-Alternatively, create a `.vscode/mcp.json` file in your workspace:
-
-```json
-{
-  "servers": {
-    "aks-mcp-server": {
-      "type": "stdio",
-      "command": "<path of binary aks-mcp>",
-      "args": [
-        "--transport", "stdio"
-      ]
-    }
-  }
-}
-```
-
-#### 🚀 Getting Started with VS Code
-
-After installing the AKS-MCP server:
-
-1. Open GitHub Copilot in VS Code and [switch to Agent mode](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
-2. Click the **Tools** button to view available tools
-3. You should see the AKS-MCP tools in the list
-4. Try a prompt like: *"List all my AKS clusters in subscription xxx"*
-5. The agent will automatically use AKS-MCP tools to complete your request
-
-**Note**: Ensure you have authenticated with Azure CLI (`az login`) for the server to access your Azure resources.
-
-### Other MCP-Compatible Clients
-
-For other MCP-compatible AI clients like [Claude Desktop](https://claude.ai/), configure the server in your MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "aks": {
-      "command": "<path of binary aks-mcp>",
-      "args": [
-        "--transport", "stdio"
-      ]
-    }
-  }
-}
-```
-
-## ⚙️ Advanced Installation Scenarios (Optional)
-
-<details>
-<summary>Docker containers, custom MCP clients, and manual install options</summary>
-
-### 🐋 Docker Installation
-
-For containerized deployment, you can run AKS-MCP server using the official Docker image:
-
-```bash
-# Pull the latest official image
-docker pull ghcr.io/azure/aks-mcp:latest
-
-# Run with Azure CLI authentication (recommended)
-docker run -i --rm ghcr.io/azure/aks-mcp:latest --transport stdio
-```
-
-> **Note**: Ensure you have authenticated with Azure CLI (`az login`) on your host system before running the container.
-
-### 🤖 Custom MCP Client Installation
-
-You can configure any MCP-compatible client to use the AKS-MCP server by running the binary directly:
-
-```bash
-# Run the server directly
-./aks-mcp --transport stdio
-```
-
-### 🔧 Manual Binary Installation
-
-For direct binary usage without package managers:
-
-1. Download the latest release from the [releases page](https://github.com/Azure/aks-mcp/releases)
-2. Extract the binary to your preferred location
-3. Make it executable (on Unix systems):
-   ```bash
-   chmod +x aks-mcp
-   ```
-4. Configure your MCP client to use the binary path
-
-</details>
-
-### Options
-
-Command line arguments:
-
-```sh
-Usage of ./aks-mcp:
-      --access-level string       Access level (readonly, readwrite, admin) (default "readonly")
-      --additional-tools string   Comma-separated list of additional Kubernetes tools to support (kubectl is always enabled). Available: helm,cilium,inspektor-gadget
-      --allow-namespaces string   Comma-separated list of allowed Kubernetes namespaces (empty means all namespaces)
-      --host string               Host to listen for the server (only used with transport sse or streamable-http) (default "127.0.0.1")
-      --port int                  Port to listen for the server (only used with transport sse or streamable-http) (default 8000)
-      --timeout int               Timeout for command execution in seconds, default is 600s (default 600)
-      --transport string          Transport mechanism to use (stdio, sse or streamable-http) (default "stdio")
-```
-
-**Environment variables:**
-- Standard Azure authentication environment variables are supported (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`)
-
-## Development
-
-### Building from Source
-
-This project includes a Makefile for convenient development, building, and testing. To see all available targets:
-
-```bash
-make help
-```
-
-#### Quick Start
-
-```bash
-# Build the binary
-make build
-
-# Run tests
-make test
-
-# Run tests with coverage
-make test-coverage
-
-# Format and lint code
-make check
-
-# Build for all platforms
-make release
-```
-
-#### Common Development Tasks
-
-```bash
-# Install dependencies
-make deps
-
-# Build and run with --help
-make run
-
-# Clean build artifacts
-make clean
-
-# Install binary to GOBIN
-make install
-```
-
-#### Docker
-
-```bash
-# Build Docker image
-make docker-build
-
-# Run Docker container
-make docker-run
-```
-
-### Manual Build
-
-If you prefer to build without the Makefile:
-
-```bash
-go build -o aks-mcp ./cmd/aks-mcp
-```
-
-## Usage
-
-Ask any questions about your AKS clusters in your AI client, for example:
-
-```
-List all my AKS clusters in my subscription xxx.
-
-What is the network configuration of my AKS cluster?
-
-Show me the network security groups associated with my cluster.
-
-Create a new Azure Fleet named prod-fleet in eastus region.
-
-List all members in my fleet.
-
-Create a placement to deploy nginx workloads to clusters with app=frontend label.
-
-Show me all ClusterResourcePlacements in my fleet.
-```
-
 ## Available Tools
 
 The AKS-MCP server provides consolidated tools for interacting with AKS clusters. These tools have been designed to provide comprehensive functionality through unified interfaces:
@@ -404,6 +194,231 @@ Real-time observability tool for Azure Kubernetes Service (AKS) clusters using e
 - `top_tcp`: Top TCP connections by traffic
 
 </details>
+
+## How to install
+
+### Prerequisites
+
+1. Set up [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and authenticate:
+   ```bash
+   az login
+   ```
+
+> **Note**: The AKS-MCP binary will be automatically downloaded when using the 1-Click Installation buttons below.
+
+### VS Code with GitHub Copilot (Recommended)
+
+#### 🚀 1-Click Installation
+
+Install AKS-MCP server directly into VS Code with one click:
+
+[![Install AKS-MCP Server](https://img.shields.io/badge/Install-AKS--MCP%20Server-blue?style=for-the-badge&logo=visual-studio-code)](https://vscode.dev/redirect/mcp/install?name=AKS-MCP%20Server&config=%7B%22command%22%3A%22bash%22%2C%22args%22%3A%5B%22-c%22%2C%22curl%20-sL%20https://github.com/Azure/aks-mcp/releases/latest/download/aks-mcp-linux-amd64%20-o%20aks-mcp%20%26%26%20chmod%20%2Bx%20aks-mcp%20%26%26%20./aks-mcp%20--transport%20stdio%22%5D%7D)
+
+> **✨ Seamless Installation**: This automatically downloads the latest AKS-MCP binary from GitHub releases and runs it. No manual installation required!
+
+#### 💻 Platform-Specific 1-Click Installation
+
+**Windows:**
+[![Install for Windows](https://img.shields.io/badge/Install%20for-Windows-0078d4?style=for-the-badge&logo=windows)](https://vscode.dev/redirect/mcp/install?name=AKS-MCP%20Server&config=%7B%22command%22%3A%22powershell%22%2C%22args%22%3A%5B%22-c%22%2C%22Invoke-WebRequest%20-Uri%20https://github.com/Azure/aks-mcp/releases/latest/download/aks-mcp-windows-amd64.exe%20-OutFile%20aks-mcp.exe%3B%20./aks-mcp.exe%20--transport%20stdio%22%5D%7D)
+
+**macOS Intel:**
+[![Install for macOS Intel](https://img.shields.io/badge/Install%20for-macOS%20Intel-000000?style=for-the-badge&logo=apple)](https://vscode.dev/redirect/mcp/install?name=AKS-MCP%20Server&config=%7B%22command%22%3A%22bash%22%2C%22args%22%3A%5B%22-c%22%2C%22curl%20-sL%20https://github.com/Azure/aks-mcp/releases/latest/download/aks-mcp-darwin-amd64%20-o%20aks-mcp%20%26%26%20chmod%20%2Bx%20aks-mcp%20%26%26%20./aks-mcp%20--transport%20stdio%22%5D%7D)
+
+**macOS Apple Silicon:**
+[![Install for macOS M1/M2](https://img.shields.io/badge/Install%20for-macOS%20M1%2FM2-000000?style=for-the-badge&logo=apple)](https://vscode.dev/redirect/mcp/install?name=AKS-MCP%20Server&config=%7B%22command%22%3A%22bash%22%2C%22args%22%3A%5B%22-c%22%2C%22curl%20-sL%20https://github.com/Azure/aks-mcp/releases/latest/download/aks-mcp-darwin-arm64%20-o%20aks-mcp%20%26%26%20chmod%20%2Bx%20aks-mcp%20%26%26%20./aks-mcp%20--transport%20stdio%22%5D%7D)
+
+**Linux:**
+[![Install for Linux](https://img.shields.io/badge/Install%20for-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://vscode.dev/redirect/mcp/install?name=AKS-MCP%20Server&config=%7B%22command%22%3A%22bash%22%2C%22args%22%3A%5B%22-c%22%2C%22curl%20-sL%20https://github.com/Azure/aks-mcp/releases/latest/download/aks-mcp-linux-amd64%20-o%20aks-mcp%20%26%26%20chmod%20%2Bx%20aks-mcp%20%26%26%20./aks-mcp%20--transport%20stdio%22%5D%7D)
+
+#### Manual VS Code Configuration
+
+Alternatively, create a `.vscode/mcp.json` file in your workspace:
+
+```json
+{
+  "servers": {
+    "aks-mcp-server": {
+      "type": "stdio",
+      "command": "<path of binary aks-mcp>",
+      "args": [
+        "--transport", "stdio"
+      ]
+    }
+  }
+}
+```
+
+#### 🚀 Getting Started with VS Code
+
+After installing the AKS-MCP server:
+
+1. Open GitHub Copilot in VS Code and [switch to Agent mode](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
+2. Click the **Tools** button to view available tools
+3. You should see the AKS-MCP tools in the list
+4. Try a prompt like: *"List all my AKS clusters in subscription xxx"*
+5. The agent will automatically use AKS-MCP tools to complete your request
+
+**Note**: Ensure you have authenticated with Azure CLI (`az login`) for the server to access your Azure resources.
+
+### Other MCP-Compatible Clients
+
+For other MCP-compatible AI clients like [Claude Desktop](https://claude.ai/), configure the server in your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "aks": {
+      "command": "<path of binary aks-mcp>",
+      "args": [
+        "--transport", "stdio"
+      ]
+    }
+  }
+}
+```
+
+### ⚙️ Advanced Installation Scenarios (Optional)
+
+<details>
+<summary>Docker containers, custom MCP clients, and manual install options</summary>
+
+### 🐋 Docker Installation
+
+For containerized deployment, you can run AKS-MCP server using the official Docker image:
+
+```bash
+# Pull the latest official image
+docker pull ghcr.io/azure/aks-mcp:latest
+
+# Run with Azure CLI authentication (recommended)
+docker run -i --rm ghcr.io/azure/aks-mcp:latest --transport stdio
+```
+
+> **Note**: Ensure you have authenticated with Azure CLI (`az login`) on your host system before running the container.
+
+### 🤖 Custom MCP Client Installation
+
+You can configure any MCP-compatible client to use the AKS-MCP server by running the binary directly:
+
+```bash
+# Run the server directly
+./aks-mcp --transport stdio
+```
+
+### 🔧 Manual Binary Installation
+
+For direct binary usage without package managers:
+
+1. Download the latest release from the [releases page](https://github.com/Azure/aks-mcp/releases)
+2. Extract the binary to your preferred location
+3. Make it executable (on Unix systems):
+   ```bash
+   chmod +x aks-mcp
+   ```
+4. Configure your MCP client to use the binary path
+
+</details>
+
+### Options
+
+Command line arguments:
+
+```sh
+Usage of ./aks-mcp:
+      --access-level string       Access level (readonly, readwrite, admin) (default "readonly")
+      --additional-tools string   Comma-separated list of additional Kubernetes tools to support (kubectl is always enabled). Available: helm,cilium,inspektor-gadget
+      --allow-namespaces string   Comma-separated list of allowed Kubernetes namespaces (empty means all namespaces)
+      --host string               Host to listen for the server (only used with transport sse or streamable-http) (default "127.0.0.1")
+      --port int                  Port to listen for the server (only used with transport sse or streamable-http) (default 8000)
+      --timeout int               Timeout for command execution in seconds, default is 600s (default 600)
+      --transport string          Transport mechanism to use (stdio, sse or streamable-http) (default "stdio")
+```
+
+**Environment variables:**
+- Standard Azure authentication environment variables are supported (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`)
+
+## Development
+
+### Building from Source
+
+This project includes a Makefile for convenient development, building, and testing. To see all available targets:
+
+```bash
+make help
+```
+
+#### Quick Start
+
+```bash
+# Build the binary
+make build
+
+# Run tests
+make test
+
+# Run tests with coverage
+make test-coverage
+
+# Format and lint code
+make check
+
+# Build for all platforms
+make release
+```
+
+#### Common Development Tasks
+
+```bash
+# Install dependencies
+make deps
+
+# Build and run with --help
+make run
+
+# Clean build artifacts
+make clean
+
+# Install binary to GOBIN
+make install
+```
+
+#### Docker
+
+```bash
+# Build Docker image
+make docker-build
+
+# Run Docker container
+make docker-run
+```
+
+### Manual Build
+
+If you prefer to build without the Makefile:
+
+```bash
+go build -o aks-mcp ./cmd/aks-mcp
+```
+
+## Usage
+
+Ask any questions about your AKS clusters in your AI client, for example:
+
+```
+List all my AKS clusters in my subscription xxx.
+
+What is the network configuration of my AKS cluster?
+
+Show me the network security groups associated with my cluster.
+
+Create a new Azure Fleet named prod-fleet in eastus region.
+
+List all members in my fleet.
+
+Create a placement to deploy nginx workloads to clusters with app=frontend label.
+
+Show me all ClusterResourcePlacements in my fleet.
+```
 
 ## Contributing
 
