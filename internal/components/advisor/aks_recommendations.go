@@ -24,13 +24,11 @@ func HandleAdvisorRecommendation(params map[string]interface{}, cfg *config.Conf
 	switch operation {
 	case "list":
 		return handleAKSAdvisorRecommendationList(params, cfg)
-	case "details":
-		return handleAKSAdvisorRecommendationDetails(params, cfg)
 	case "report":
 		return handleAKSAdvisorRecommendationReport(params, cfg)
 	default:
 		log.Printf("[ADVISOR] Invalid operation: %s", operation)
-		return "", fmt.Errorf("invalid operation: %s. Allowed values: list, details, report", operation)
+		return "", fmt.Errorf("invalid operation: %s. Allowed values: list, report", operation)
 	}
 }
 
@@ -96,36 +94,6 @@ func handleAKSAdvisorRecommendationList(params map[string]interface{}, cfg *conf
 	}
 
 	log.Printf("[ADVISOR] Returning %d recommendation summaries", len(summaries))
-	return string(result), nil
-}
-
-// handleAKSAdvisorRecommendationDetails gets detailed information for a specific recommendation
-func handleAKSAdvisorRecommendationDetails(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
-	recommendationID, ok := params["recommendation_id"].(string)
-	if !ok {
-		return "", fmt.Errorf("recommendation_id parameter is required for details operation")
-	}
-
-	// Execute Azure CLI command to get specific recommendation details
-	recommendation, err := getRecommendationDetailsViaCLI(recommendationID, cfg)
-	if err != nil {
-		return "", fmt.Errorf("failed to get recommendation details: %w", err)
-	}
-
-	// Check if this is an AKS-related recommendation
-	if !isAKSRelatedCLI(recommendation.ID) {
-		return "", fmt.Errorf("recommendation %s is not related to AKS resources", recommendationID)
-	}
-
-	// Convert to detailed AKS recommendation
-	summary := convertToAKSRecommendationSummary(*recommendation)
-
-	// Return JSON response
-	result, err := json.MarshalIndent(summary, "", "  ")
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal recommendation details: %w", err)
-	}
-
 	return string(result), nil
 }
 
@@ -204,33 +172,6 @@ func listRecommendationsViaCLI(subscriptionID, resourceGroup, category string, c
 
 	log.Printf("[ADVISOR] Successfully parsed %d recommendations from CLI output", len(recommendations))
 	return recommendations, nil
-}
-
-// getRecommendationDetailsViaCLI gets details for a specific recommendation
-func getRecommendationDetailsViaCLI(recommendationID string, cfg *config.ConfigData) (*CLIRecommendation, error) {
-	executor := azcli.NewExecutor()
-
-	// Build command
-	args := []string{"advisor", "recommendation", "show", "--recommendation-id", recommendationID, "--output", "json"}
-
-	// Create command parameters
-	cmdParams := map[string]interface{}{
-		"command": "az " + strings.Join(args, " "),
-	}
-
-	// Execute command
-	output, err := executor.Execute(cmdParams, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute Azure CLI command: %w", err)
-	}
-
-	// Parse JSON output
-	var recommendation CLIRecommendation
-	if err := json.Unmarshal([]byte(output), &recommendation); err != nil {
-		return nil, fmt.Errorf("failed to parse recommendation JSON: %w", err)
-	}
-
-	return &recommendation, nil
 }
 
 // filterAKSRecommendationsFromCLI filters recommendations to only AKS-related resources
