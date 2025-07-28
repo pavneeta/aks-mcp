@@ -22,7 +22,7 @@ func TestGetSupportedMonitoringOperations_ContainsExpectedOps(t *testing.T) {
 	operations := GetSupportedMonitoringOperations()
 
 	expectedOps := []string{
-		"metrics", "resource_health", "app_insights", "diagnostics", "logs",
+		"metrics", "resource_health", "app_insights", "diagnostics", "control_plane_logs",
 	}
 
 	for _, expectedOp := range expectedOps {
@@ -41,7 +41,7 @@ func TestGetSupportedMonitoringOperations_ContainsExpectedOps(t *testing.T) {
 
 func TestValidateMonitoringOperation_ChecksValidOperations(t *testing.T) {
 	// Test that validation works for supported operations
-	validOps := []string{"metrics", "resource_health", "app_insights", "diagnostics", "logs"}
+	validOps := []string{"metrics", "resource_health", "app_insights", "diagnostics", "control_plane_logs"}
 	for _, op := range validOps {
 		if !ValidateMonitoringOperation(op) {
 			t.Errorf("Expected operation '%s' to be valid", op)

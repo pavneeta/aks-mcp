@@ -11,11 +11,11 @@ import (
 type MonitoringOperationType string
 
 const (
-	OpMetrics        MonitoringOperationType = "metrics"
-	OpResourceHealth MonitoringOperationType = "resource_health"
-	OpAppInsights    MonitoringOperationType = "app_insights"
-	OpDiagnostics    MonitoringOperationType = "diagnostics"
-	OpLogs           MonitoringOperationType = "logs"
+	OpMetrics          MonitoringOperationType = "metrics"
+	OpResourceHealth   MonitoringOperationType = "resource_health"
+	OpAppInsights      MonitoringOperationType = "app_insights"
+	OpDiagnostics      MonitoringOperationType = "diagnostics"
+	OpControlPlaneLogs MonitoringOperationType = "control_plane_logs"
 )
 
 // RegisterAzMonitoring registers the monitoring tool
@@ -27,7 +27,7 @@ Supported operations:
 - resource_health: Get resource health events for AKS clusters
 - app_insights: Execute KQL queries against Application Insights data
 - diagnostics: Check AKS cluster diagnostic settings configuration
-- logs: Query AKS control plane logs with safety constraints
+- control_plane_logs: Query AKS control plane logs with safety constraints
 
 Examples:
 - List metrics: operation="metrics", query_type="list", parameters="{\"resource\":\"<aks-cluster-id>\"}"
@@ -36,7 +36,7 @@ Examples:
 - Resource health: operation="resource_health", subscription_id="<subscription-id>", resource_group="<resource-group>", cluster_name="<cluster-name>", parameters="{\"start_time\":\"2025-01-01T00:00:00Z\"}"
 - App Insights query: operation="app_insights", subscription_id="<subscription-id>", resource_group="<resource-group>", parameters="{\"app_insights_name\":\"...\", \"query\":\"...\"}"
 - Check diagnostics: operation="diagnostics"
-- Query logs: operation="logs", parameters="{\"log_category\":\"kube-apiserver\", \"start_time\":\"...\"}"
+- Query AKS control plane logs: operation="control_plane_logs", parameters="{\"log_category\":\"kube-apiserver\", \"start_time\":\"...\"}"
 `
 
 	return mcp.NewTool("az_monitoring",
@@ -68,7 +68,7 @@ Examples:
 func ValidateMonitoringOperation(operation string) bool {
 	supportedOps := []string{
 		string(OpMetrics), string(OpResourceHealth), string(OpAppInsights),
-		string(OpDiagnostics), string(OpLogs),
+		string(OpDiagnostics), string(OpControlPlaneLogs),
 	}
 	return slices.Contains(supportedOps, operation)
 }
@@ -77,7 +77,7 @@ func ValidateMonitoringOperation(operation string) bool {
 func GetSupportedMonitoringOperations() []string {
 	return []string{
 		string(OpMetrics), string(OpResourceHealth), string(OpAppInsights),
-		string(OpDiagnostics), string(OpLogs),
+		string(OpDiagnostics), string(OpControlPlaneLogs),
 	}
 }
 

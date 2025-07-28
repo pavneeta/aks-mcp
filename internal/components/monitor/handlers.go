@@ -289,7 +289,7 @@ func GetAzMonitoringHandler(cfg *config.ConfigData) tools.ResourceHandler {
 			return handleAppInsightsOperation(params, cfg)
 		case string(OpDiagnostics):
 			return handleDiagnosticsOperation(params, cfg)
-		case string(OpLogs):
+		case string(OpControlPlaneLogs):
 			return handleLogsOperation(params, cfg)
 		default:
 			return "", fmt.Errorf("operation '%s' not implemented", operation)
