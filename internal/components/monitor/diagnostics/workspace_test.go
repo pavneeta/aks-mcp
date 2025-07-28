@@ -277,7 +277,7 @@ func TestFindDiagnosticSettingForCategory_NegativeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := FindDiagnosticSettingForCategory(tt.subscriptionID, tt.resourceGroup, tt.clusterName, tt.logCategory, cfg)
+			_, _, err := FindDiagnosticSettingForCategory(tt.subscriptionID, tt.resourceGroup, tt.clusterName, tt.logCategory, nil, cfg)
 
 			if err == nil {
 				t.Errorf("Expected error for case '%s', got nil", tt.name)
@@ -311,7 +311,7 @@ func TestFindDiagnosticSettingForCategory_JSONStructureEdgeCases(t *testing.T) {
 
 	for _, invalidCluster := range invalidChars {
 		t.Run("cluster_name_with_special_chars", func(t *testing.T) {
-			_, _, err := FindDiagnosticSettingForCategory("test-sub", "test-rg", invalidCluster, "kube-apiserver", cfg)
+			_, _, err := FindDiagnosticSettingForCategory("test-sub", "test-rg", invalidCluster, "kube-apiserver", nil, cfg)
 
 			// Should get an error (likely from Azure CLI execution)
 			if err == nil {
@@ -359,7 +359,7 @@ func TestFindDiagnosticSettingForCategory_MissingWorkspaceScenarios(t *testing.T
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := FindDiagnosticSettingForCategory("test-sub", "test-rg", "test-cluster", tc.logCategory, cfg)
+			_, _, err := FindDiagnosticSettingForCategory("test-sub", "test-rg", "test-cluster", tc.logCategory, nil, cfg)
 
 			if err == nil {
 				t.Errorf("Expected error for non-existent category '%s', got nil", tc.logCategory)
@@ -441,7 +441,7 @@ func TestFindDiagnosticSettingForCategory_ErrorPathCoverage(t *testing.T) {
 
 	for _, tt := range paramTests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := FindDiagnosticSettingForCategory(tt.subscriptionID, tt.resourceGroup, tt.clusterName, tt.logCategory, cfg)
+			_, _, err := FindDiagnosticSettingForCategory(tt.subscriptionID, tt.resourceGroup, tt.clusterName, tt.logCategory, nil, cfg)
 
 			// All these cases should result in errors (either from parameter validation or Azure CLI execution)
 			if err == nil {
@@ -480,6 +480,7 @@ func TestFindDiagnosticSettingForCategory_ConcurrencyAndStress(t *testing.T) {
 					"test-rg",
 					"test-cluster",
 					"kube-apiserver",
+					nil,
 					cfg,
 				)
 				errChan <- err
