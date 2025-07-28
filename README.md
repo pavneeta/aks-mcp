@@ -66,11 +66,13 @@ Command line arguments:
 
 ```sh
 Usage of ./aks-mcp:
-      --access-level string   Access level (readonly, readwrite, admin) (default "readonly")
-      --host string           Host to listen for the server (only used with transport sse or streamable-http) (default "127.0.0.1")
-      --port int              Port to listen for the server (only used with transport sse or streamable-http) (default 8000)
-      --timeout int           Timeout for command execution in seconds, default is 600s (default 600)
-      --transport string      Transport mechanism to use (stdio, sse or streamable-http) (default "stdio")
+      --access-level string       Access level (readonly, readwrite, admin) (default "readonly")
+      --additional-tools string   Comma-separated list of additional Kubernetes tools to support (kubectl is always enabled). Available: helm,cilium,inspektor-gadget
+      --allow-namespaces string   Comma-separated list of allowed Kubernetes namespaces (empty means all namespaces)
+      --host string               Host to listen for the server (only used with transport sse or streamable-http) (default "127.0.0.1")
+      --port int                  Port to listen for the server (only used with transport sse or streamable-http) (default 8000)
+      --timeout int               Timeout for command execution in seconds, default is 600s (default 600)
+      --transport string          Transport mechanism to use (stdio, sse or streamable-http) (default "stdio")
 ```
 
 **Environment variables:**
@@ -119,9 +121,6 @@ make clean
 
 # Install binary to GOBIN
 make install
-
-# Run security scan
-make security
 ```
 
 #### Docker
@@ -164,159 +163,185 @@ Show me all ClusterResourcePlacements in my fleet.
 
 ## Available Tools
 
-The AKS-MCP server provides the following tools for interacting with AKS clusters:
+The AKS-MCP server provides consolidated tools for interacting with AKS clusters. These tools have been designed to provide comprehensive functionality through unified interfaces:
 
 <details>
-<summary>AKS Cluster Management Tools (Read-Only)</summary>
+<summary>AKS Cluster Management</summary>
 
-- `az_aks_show`: Show the details of a managed Kubernetes cluster
-- `az_aks_list`: List managed Kubernetes clusters
-- `az_aks_get-versions`: Get the versions available for creating a managed Kubernetes cluster
-- `az_aks_check-network_outbound`: Perform outbound network connectivity check for a node
-- `az_aks_nodepool_list`: List node pools in a managed Kubernetes cluster
-- `az_aks_nodepool_show`: Show the details for a node pool in the managed Kubernetes cluster
+**Tool:** `az_aks_operations`
+
+Unified tool for managing Azure Kubernetes Service (AKS) clusters and related operations.
+
+**Available Operations:**
+- **Read-Only** (all access levels):
+  - `show`: Show cluster details
+  - `list`: List clusters in subscription/resource group
+  - `get-versions`: Get available Kubernetes versions
+  - `check-network`: Perform outbound network connectivity check
+  - `nodepool-list`: List node pools in cluster
+  - `nodepool-show`: Show node pool details
+  - `account-list`: List Azure subscriptions
+
+- **Read-Write** (`readwrite`/`admin` access levels):
+  - `create`: Create new cluster
+  - `delete`: Delete cluster
+  - `scale`: Scale cluster node count
+  - `update`: Update cluster configuration
+  - `upgrade`: Upgrade Kubernetes version
+  - `nodepool-add`: Add node pool to cluster
+  - `nodepool-delete`: Delete node pool
+  - `nodepool-scale`: Scale node pool
+  - `nodepool-upgrade`: Upgrade node pool
+  - `account-set`: Set active subscription
+  - `login`: Azure authentication
+
+- **Admin-Only** (`admin` access level):
+  - `get-credentials`: Get cluster credentials for kubectl access
+
 </details>
 
 <details>
-<summary>AKS Cluster Management Tools (Read-Write)</summary>
+<summary>Network Resource Management</summary>
 
-*Available with `--access-level readwrite` or `admin`*
+**Tool:** `az_network_resources`
 
-- `az_aks_create`: Create a new managed Kubernetes cluster
-- `az_aks_delete`: Delete a managed Kubernetes cluster
-- `az_aks_scale`: Scale the node pool in a managed Kubernetes cluster
-- `az_aks_update`: Update a managed Kubernetes cluster
-- `az_aks_upgrade`: Upgrade a managed Kubernetes cluster to a newer version
-- `az_aks_nodepool_add`: Add a node pool to the managed Kubernetes cluster
-- `az_aks_nodepool_delete`: Delete a node pool from the managed Kubernetes cluster
-- `az_aks_nodepool_scale`: Scale a node pool in a managed Kubernetes cluster
-- `az_aks_nodepool_upgrade`: Upgrade a node pool to a newer version
+Unified tool for getting Azure network resource information used by AKS clusters.
+
+**Available Resource Types:**
+- `all`: Get information about all network resources
+- `vnet`: Virtual Network information
+- `subnet`: Subnet information  
+- `nsg`: Network Security Group information
+- `route_table`: Route Table information
+- `load_balancer`: Load Balancer information
+- `private_endpoint`: Private endpoint information
+
 </details>
 
 <details>
-<summary>AKS Cluster Management Tools (Admin)</summary>
+<summary>Monitoring and Diagnostics</summary>
 
-*Available with `--access-level admin` only*
+**Tool:** `az_monitoring`
 
-- `az_aks_get-credentials`: Get access credentials for a managed Kubernetes cluster
+Unified tool for Azure monitoring and diagnostics operations for AKS clusters.
+
+**Available Operations:**
+- `metrics`: List metric values for resources
+- `resource_health`: Retrieve resource health events for AKS clusters
+- `app_insights`: Execute KQL queries against Application Insights telemetry data
+- `diagnostics`: Check if AKS cluster has diagnostic settings configured
+- `control_plane_logs`: Query AKS control plane logs with safety constraints and time range validation
+
 </details>
 
 <details>
-<summary>Network Tools</summary>
+<summary>Compute Resources</summary>
 
-- `get_vnet_info`: Get information about the VNet used by the AKS cluster
-- `get_subnet_info`: Get information about the Subnet used by the AKS cluster
-- `get_route_table_info`: Get information about the Route Table used by the AKS cluster
-- `get_nsg_info`: Get information about the Network Security Group used by the AKS cluster
-- `get_load_balancers_info`: Get information about all Load Balancers used by the AKS cluster
-- `get_private_endpoint_info`: Get information about the private endpoint used by the AKS cluster
+**Tool:** `get_aks_vmss_info`
+- Get detailed VMSS configuration for node pools in the AKS cluster
+
+**Tool:** `az_vmss_run-command_invoke` *(readwrite/admin only)*
+- Execute commands on Virtual Machine Scale Set instances
+
 </details>
 
 <details>
-<summary>Compute Tools</summary>
+<summary>Fleet Management</summary>
 
-- `get_aks_vmss_info`: Get detailed VMSS configuration for node pools in the AKS cluster
-- `az_vmss_run-command_invoke`: Execute a command on instances of a Virtual Machine Scale Set (readwrite/admin)
+**Tool:** `az_fleet`
+
+Comprehensive Azure Fleet management for multi-cluster scenarios.
+
+**Available Operations:**
+- **Fleet Operations**: list, show, create, update, delete, get-credentials
+- **Member Operations**: list, show, create, update, delete
+- **Update Run Operations**: list, show, create, start, stop, delete
+- **Update Strategy Operations**: list, show, create, delete
+- **ClusterResourcePlacement Operations**: list, show, get, create, delete
+
+Supports both Azure Fleet management and Kubernetes ClusterResourcePlacement CRD operations.
+
 </details>
 
 <details>
-<summary>Monitor Tools</summary>
+<summary>Diagnostic Detectors</summary>
 
-- `az_monitor_metrics_list`: List the metric values for a resource
-- `az_monitor_metrics_list-definitions`: List the metric definitions for a resource
-- `az_monitor_metrics_list-namespaces`: List the metric namespaces for a resource
-- `az_monitor_activity_log_resource_health`: Retrieve resource health events for AKS clusters
-- `az_monitor_app_insights_query`: Execute KQL queries against Application Insights telemetry data
+**Tool:** `list_detectors`
+- List all available AKS cluster detectors
+
+**Tool:** `run_detector`
+- Run a specific AKS diagnostic detector
+
+**Tool:** `run_detectors_by_category`
+- Run all detectors in a specific category
+- **Categories**: Best Practices, Cluster and Control Plane Availability and Performance, Connectivity Issues, Create/Upgrade/Delete and Scale, Deprecations, Identity and Security, Node Health, Storage
+
 </details>
 
 <details>
-<summary>AKS Control Plane Tools</summary>
+<summary>Azure Advisor</summary>
 
-- `aks_control_plane_diagnostic_settings`: Check if AKS cluster has diagnostic settings configured
-- `aks_control_plane_logs`: Query AKS control plane logs with safety constraints and time range validation
-</details>
+**Tool:** `az_advisor_recommendation`
 
-<details>
-<summary>Fleet Tools</summary>
+Retrieve and manage Azure Advisor recommendations for AKS clusters.
 
-- `az_fleet`: Execute Azure Fleet commands with structured parameters for AKS Fleet management
-  - Supports operations: list, show, create, update, delete, start, stop, get-credentials
-  - Supports resources: fleet, member, updaterun, updatestrategy, clusterresourceplacement
-  - Requires readwrite or admin access for write operations
-  - **Kubernetes ClusterResourcePlacement Operations**: Create and manage ClusterResourcePlacements
-    - `clusterresourceplacement create`: Create new ClusterResourcePlacement with policy and selectors
-    - `clusterresourceplacement list`: List all ClusterResourcePlacements
-    - `clusterresourceplacement show/get`: Show ClusterResourcePlacement details
-    - `clusterresourceplacement delete`: Delete ClusterResourcePlacement
-</details>
+**Available Operations:**
+- `list`: List recommendations with filtering options
+- `report`: Generate recommendation reports
+- **Filter Options**: resource_group, cluster_names, category (Cost, HighAvailability, Performance, Security), severity (High, Medium, Low)
 
-<details>
-<summary>Detector Tools</summary>
-
-- `list_detectors`: List all available AKS cluster detectors
-- `run_detector`: Run a specific AKS detector
-- `run_detectors_by_category`: Run all detectors in a specific category
-</details>
-
-<details>
-<summary>Azure Advisor Tools</summary>
-
-- `az_advisor_recommendation`: Retrieve and manage Azure Advisor recommendations for AKS clusters
 </details>
 
 <details>
 <summary>Kubernetes Tools</summary>
 
-*Note: kubectl commands are available with all access levels. Additional tools (helm, cilium) require explicit enablement via `--additional-tools`*
+*Note: kubectl commands are available with all access levels. Additional tools require explicit enablement via `--additional-tools`*
 
 **kubectl Commands (Read-Only):**
-- `kubectl_get`: Display one or many resources
-- `kubectl_describe`: Show details of a specific resource or group of resources
-- `kubectl_explain`: Documentation of resources
-- `kubectl_logs`: Print the logs for a container in a pod
-- `kubectl_api-resources`: Print the supported API resources on the server
-- `kubectl_api-versions`: Print the supported API versions on the server
-- `kubectl_diff`: Diff live configuration against a would-be applied file
-- `kubectl_cluster-info`: Display cluster info
-- `kubectl_top`: Display resource usage
-- `kubectl_events`: List events in the cluster
-- `kubectl_auth`: Inspect authorization
+- `kubectl_get`, `kubectl_describe`, `kubectl_explain`, `kubectl_logs`
+- `kubectl_api-resources`, `kubectl_api-versions`, `kubectl_diff`
+- `kubectl_cluster-info`, `kubectl_top`, `kubectl_events`, `kubectl_auth`
 
 **kubectl Commands (Read-Write/Admin):**
-- `kubectl_create`: Create a resource from a file or from stdin
-- `kubectl_delete`: Delete resources by file names, stdin, resources and names, or by resources and label selector
-- `kubectl_apply`: Apply a configuration to a resource by file name or stdin
-- `kubectl_expose`: Take a replication controller, service, deployment or pod and expose it as a new Kubernetes Service
-- `kubectl_run`: Run a particular image on the cluster
-- `kubectl_set`: Set specific features on objects
-- `kubectl_rollout`: Manage the rollout of a resource
-- `kubectl_scale`: Set a new size for a Deployment, ReplicaSet, Replication Controller, or StatefulSet
-- `kubectl_autoscale`: Auto-scale a Deployment, ReplicaSet, or StatefulSet
-- `kubectl_label`: Update the labels on a resource
-- `kubectl_annotate`: Update the annotations on a resource
-- `kubectl_patch`: Update field(s) of a resource
-- `kubectl_replace`: Replace a resource by file name or stdin
-- `kubectl_cp`: Copy files and directories to and from containers
-- `kubectl_exec`: Execute a command in a container
-- `kubectl_cordon`: Mark node as unschedulable
-- `kubectl_uncordon`: Mark node as schedulable
-- `kubectl_drain`: Drain node in preparation for maintenance
-- `kubectl_taint`: Update the taints on one or more nodes
-- `kubectl_certificate`: Modify certificate resources
+- `kubectl_create`, `kubectl_delete`, `kubectl_apply`, `kubectl_expose`, `kubectl_run`
+- `kubectl_set`, `kubectl_rollout`, `kubectl_scale`, `kubectl_autoscale`
+- `kubectl_label`, `kubectl_annotate`, `kubectl_patch`, `kubectl_replace`
+- `kubectl_cp`, `kubectl_exec`, `kubectl_cordon`, `kubectl_uncordon`
+- `kubectl_drain`, `kubectl_taint`, `kubectl_certificate`
 
 **Additional Tools (Optional):**
-- `helm`: Helm package manager for Kubernetes (requires `--additional-tools helm`)
-- `cilium`: Cilium CLI for eBPF-based networking and security (requires `--additional-tools cilium`)
-- `inspektor-gadget`: [Inspektor Gadget](docs/inspektor-gadget-usage.md) for real-time debugging of Kubernetes clusters (requires `--additional-tools=inspektor-gadget`)
+- `helm`: Helm package manager (requires `--additional-tools helm`)
+- `cilium`: Cilium CLI for eBPF networking (requires `--additional-tools cilium`)
 
 </details>
 
 <details>
-<summary>Account Management Tools</summary>
+<summary>Real-time Observability</summary>
 
-- `az_account_list`: List all subscriptions for the authenticated account
-- `az_account_set`: Set a subscription as the current active subscription
-- `az_login`: Log in to Azure using service principal credentials
+**Tool:** `inspektor_gadget` *(requires `--additional-tools inspektor-gadget`)*
+
+Real-time observability tool for Azure Kubernetes Service (AKS) clusters using eBPF.
+
+**Available Actions:**
+- `deploy`: Deploy Inspektor Gadget to cluster
+- `undeploy`: Remove Inspektor Gadget from cluster
+- `is_deployed`: Check deployment status
+- `run`: Run one-shot gadgets
+- `start`: Start continuous gadgets
+- `stop`: Stop running gadgets
+- `get_results`: Retrieve gadget results
+- `list_gadgets`: List available gadgets
+
+**Available Gadgets:**
+- `observe_dns`: Monitor DNS requests and responses
+- `observe_tcp`: Monitor TCP connections
+- `observe_file_open`: Monitor file system operations
+- `observe_process_execution`: Monitor process execution
+- `observe_signal`: Monitor signal delivery
+- `observe_system_calls`: Monitor system calls
+- `top_file`: Top files by I/O operations
+- `top_tcp`: Top TCP connections by traffic
+
 </details>
 
 ## Contributing
