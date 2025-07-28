@@ -214,7 +214,7 @@ Install AKS-MCP server directly into VS Code with one click:
 
 [![Install AKS-MCP Server](https://img.shields.io/badge/Install-AKS--MCP%20Server-blue?style=for-the-badge&logo=visual-studio-code)](https://vscode.dev/redirect/mcp/install?name=AKS-MCP%20Server&config=%7B%22command%22%3A%22bash%22%2C%22args%22%3A%5B%22-c%22%2C%22curl%20-sL%20https://github.com/Azure/aks-mcp/releases/latest/download/aks-mcp-linux-amd64%20-o%20aks-mcp%20%26%26%20chmod%20%2Bx%20aks-mcp%20%26%26%20./aks-mcp%20--transport%20stdio%22%5D%7D)
 
-> **✨ Seamless Installation**: This automatically downloads the latest AKS-MCP binary from GitHub releases and runs it. No manual installation required!
+> **✨ Seamless Installation**: This automatically downloads the latest AKS-MCP binary from GitHub releases and configures it in VS Code. After installation, restart VS Code to activate the server.
 
 #### 💻 Platform-Specific 1-Click Installation
 
@@ -250,11 +250,14 @@ Alternatively, create a `.vscode/mcp.json` file in your workspace:
 
 After installing the AKS-MCP server:
 
-1. Open GitHub Copilot in VS Code and [switch to Agent mode](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
-2. Click the **Tools** button to view available tools
-3. You should see the AKS-MCP tools in the list
-4. Try a prompt like: *"List all my AKS clusters in subscription xxx"*
-5. The agent will automatically use AKS-MCP tools to complete your request
+1. **Restart VS Code** - Close and reopen VS Code to load the new MCP server configuration
+2. Open GitHub Copilot in VS Code and [switch to Agent mode](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
+3. Click the **Tools** button to view available tools
+4. You should see the AKS-MCP tools in the list
+5. Try a prompt like: *"List all my AKS clusters in subscription xxx"*
+6. The agent will automatically use AKS-MCP tools to complete your request
+
+> **💡 Tip**: If you don't see the AKS-MCP tools after restarting, check the VS Code output panel for any MCP server connection errors.
 
 **Note**: Ensure you have authenticated with Azure CLI (`az login`) for the server to access your Azure resources.
 
