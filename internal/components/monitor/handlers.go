@@ -315,9 +315,18 @@ func handleMetricsOperation(params map[string]interface{}, cfg *config.ConfigDat
 		return "", fmt.Errorf("missing or invalid 'parameters' parameter")
 	}
 
-	// Parse parameters (this is a simplified implementation)
-	// In a real implementation, you would parse the JSON properly
-	args := strings.Split(parametersStr, " ")
+	// Parse JSON parameters and convert to command-line arguments
+	var jsonParams map[string]interface{}
+	if err := json.Unmarshal([]byte(parametersStr), &jsonParams); err != nil {
+		return "", fmt.Errorf("failed to parse parameters JSON: %w", err)
+	}
+
+	// Convert JSON parameters to command-line argument format [--key1 value1 --key2 value2]
+	var args []string
+	for key, value := range jsonParams {
+		args = append(args, "--"+key)
+		args = append(args, fmt.Sprintf("%v", value))
+	}
 
 	// Map query type to command
 	baseCommand, err := MapMetricsQueryTypeToCommand(queryType)

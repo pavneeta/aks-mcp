@@ -30,9 +30,11 @@ Supported operations:
 - logs: Query AKS control plane logs with safety constraints
 
 Examples:
-- Get metrics: operation="metrics", query_type="list", parameters="{\"resource\":\"...\", \"metric\":\"...\"}"
-- Resource health: operation="resource_health", parameters="{\"start_time\":\"2025-01-01T00:00:00Z\"}"
-- App Insights query: operation="app_insights", parameters="{\"app_insights_name\":\"...\", \"query\":\"...\"}"
+- List metrics: operation="metrics", query_type="list", parameters="{\"resource\":\"<aks-cluster-id>\"}"
+- List metrics definitions: operation="metrics", query_type="list-definitions", parameters="{\"resource\":\"<aks-cluster-id>\"}"
+- List metrics namespaces: operation="metrics", query_type="list-namespaces", parameters="{\"resource\":\"<aks-cluster-id>\"}"
+- Resource health: operation="resource_health", subscription_id="<subscription-id>", resource_group="<resource-group>", cluster_name="<cluster-name>", parameters="{\"start_time\":\"2025-01-01T00:00:00Z\"}"
+- App Insights query: operation="app_insights", subscription_id="<subscription-id>", resource_group="<resource-group>", parameters="{\"app_insights_name\":\"...\", \"query\":\"...\"}"
 - Check diagnostics: operation="diagnostics"
 - Query logs: operation="logs", parameters="{\"log_category\":\"kube-apiserver\", \"start_time\":\"...\"}"
 `
