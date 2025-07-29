@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Azure/aks-mcp/internal/azcli"
+	"github.com/Azure/aks-mcp/internal/azureclient"
 	"github.com/Azure/aks-mcp/internal/components/monitor/diagnostics"
 	"github.com/Azure/aks-mcp/internal/config"
 	"github.com/Azure/aks-mcp/internal/tools"
@@ -265,7 +266,7 @@ func GetAppInsightsHandler(cfg *config.ConfigData) tools.ResourceHandler {
 }
 
 // GetAzMonitoringHandler returns a ResourceHandler for the monitoring tool
-func GetAzMonitoringHandler(cfg *config.ConfigData) tools.ResourceHandler {
+func GetAzMonitoringHandler(azClient *azureclient.AzureClient, cfg *config.ConfigData) tools.ResourceHandler {
 	return tools.ResourceHandlerFunc(func(params map[string]interface{}, _ *config.ConfigData) (string, error) {
 		// Extract operation parameter
 		operation, ok := params["operation"].(string)
@@ -288,9 +289,9 @@ func GetAzMonitoringHandler(cfg *config.ConfigData) tools.ResourceHandler {
 		case string(OpAppInsights):
 			return handleAppInsightsOperation(params, cfg)
 		case string(OpDiagnostics):
-			return handleDiagnosticsOperation(params, cfg)
+			return handleDiagnosticsOperation(params, azClient, cfg)
 		case string(OpControlPlaneLogs):
-			return handleLogsOperation(params, cfg)
+			return handleLogsOperation(params, azClient, cfg)
 		default:
 			return "", fmt.Errorf("operation '%s' not implemented", operation)
 		}
@@ -365,7 +366,7 @@ func handleAppInsightsOperation(params map[string]interface{}, cfg *config.Confi
 	return GetAppInsightsHandler(cfg).Handle(mergedParams, cfg)
 }
 
-func handleDiagnosticsOperation(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
+func handleDiagnosticsOperation(params map[string]interface{}, azClient *azureclient.AzureClient, cfg *config.ConfigData) (string, error) {
 	// Merge parameters from top-level and nested JSON
 	mergedParams, err := mergeMonitoringParams(params)
 	if err != nil {
@@ -373,10 +374,10 @@ func handleDiagnosticsOperation(params map[string]interface{}, cfg *config.Confi
 	}
 
 	// Use existing control plane diagnostics handler
-	return diagnostics.GetControlPlaneDiagnosticSettingsHandler(cfg).Handle(mergedParams, cfg)
+	return diagnostics.GetControlPlaneDiagnosticSettingsHandler(azClient, cfg).Handle(mergedParams, cfg)
 }
 
-func handleLogsOperation(params map[string]interface{}, cfg *config.ConfigData) (string, error) {
+func handleLogsOperation(params map[string]interface{}, azClient *azureclient.AzureClient, cfg *config.ConfigData) (string, error) {
 	// Merge parameters from top-level and nested JSON
 	mergedParams, err := mergeMonitoringParams(params)
 	if err != nil {
@@ -384,5 +385,5 @@ func handleLogsOperation(params map[string]interface{}, cfg *config.ConfigData) 
 	}
 
 	// Use existing control plane logs handler
-	return diagnostics.GetControlPlaneLogsHandler(cfg).Handle(mergedParams, cfg)
+	return diagnostics.GetControlPlaneLogsHandler(azClient, cfg).Handle(mergedParams, cfg)
 }
