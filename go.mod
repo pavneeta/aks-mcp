@@ -13,7 +13,7 @@ require (
 	github.com/Azure/mcp-kubernetes v0.0.5-0.20250724094522-0e7f5ad3fde1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/inspektor-gadget/inspektor-gadget v0.42.0
-	github.com/mark3labs/mcp-go v0.34.0
+	github.com/mark3labs/mcp-go v0.35.0
 	github.com/spf13/pflag v1.0.7
 	k8s.io/apimachinery v0.33.3
 	k8s.io/cli-runtime v0.33.3
