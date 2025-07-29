@@ -43,6 +43,7 @@ const (
 	inspektorGadgetChartRelease   = "gadget"
 	inspektorGadgetChartNamespace = "gadget"
 	inspektorGadgetChartURL       = "oci://ghcr.io/inspektor-gadget/inspektor-gadget/charts/gadget"
+	inspektorGadgetReleaseURL     = "https://api.github.com/repos/inspektor-gadget/inspektor-gadget/releases/latest"
 )
 
 // Name of the Inspektor Gadget gadgets

@@ -1,6 +1,10 @@
 package inspektorgadget
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -8,6 +12,16 @@ import (
 
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-service/api"
 )
+
+// getChartVersion retrieves the version of the Inspektor Gadget Helm chart.
+// It first attempts to get the version from GitHub releases, and if that fails,
+// it falls back to the version from the build information.
+func getChartVersion() string {
+	if version, err := getChartVersionFromGitHub(); err == nil {
+		return version
+	}
+	return getChartVersionFromBuild()
+}
 
 // getChartVersionFromBuild retrieves the version of the Inspektor Gadget Helm chart from the build information.
 func getChartVersionFromBuild() string {
@@ -21,6 +35,32 @@ func getChartVersionFromBuild() string {
 		}
 	}
 	return "1.0.0-dev"
+}
+
+// getChartVersionFromGitHub retrieves the version of the Inspektor Gadget Helm chart from the GitHub repository.
+func getChartVersionFromGitHub() (string, error) {
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(inspektorGadgetReleaseURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to get latest release: %w", err)
+	}
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "closing response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to get latest release, status code: %d", resp.StatusCode)
+	}
+
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	if err = json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return "", fmt.Errorf("decoding latest release response: %w", err)
+	}
+	return strings.TrimPrefix(release.TagName, "v"), nil
 }
 
 // gadgetInstanceFromAPI converts an API GadgetInstance to a GadgetInstance struct.
