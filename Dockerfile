@@ -22,8 +22,12 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o aks-mcp ./cmd/aks-mcp
 # Runtime stage
 FROM alpine:3.22
 
-# Install required packages for kubectl and helm
-RUN apk add --no-cache curl bash openssl ca-certificates git
+# Install required packages for kubectl and helm, plus build tools for Azure CLI
+RUN apk add --no-cache curl bash openssl ca-certificates git python3 py3-pip \
+    gcc python3-dev musl-dev linux-headers
+
+# Install Azure CLI
+RUN pip3 install --break-system-packages azure-cli
 
 # Create the mcp user and group
 RUN addgroup -S mcp && \
@@ -37,6 +41,9 @@ COPY --from=builder /app/aks-mcp /usr/local/bin/aks-mcp
 # Set working directory
 WORKDIR /home/mcp
 
+# Expose the default port for sse/streamable-http transports
+EXPOSE 8000
+
 # Switch to non-root user
 USER mcp
 
@@ -45,4 +52,4 @@ ENV HOME=/home/mcp
 
 # Command to run
 ENTRYPOINT ["/usr/local/bin/aks-mcp"]
-CMD ["--transport", "stdio"]
+CMD ["--transport", "streamable-http", "--host", "0.0.0.0"]

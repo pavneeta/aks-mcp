@@ -148,6 +148,7 @@ _TeamCity*
 coverage*.json
 coverage*.xml
 coverage*.info
+coverage.txt
 
 # Visual Studio code coverage results
 *.coverage
@@ -398,3 +399,17 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Go binary
+aks-mcp
+
+# Custom ignores for AKS-MCP
+*.exe
+PULL_REQUEST_TEMPLATE.md
+
+# PowerShell scripts for development/debugging
+*.ps1
+# Build artifacts
+dist/
+coverage.txt
+coverage.out
